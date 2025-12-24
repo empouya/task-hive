@@ -16,7 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from common.views import TriggerErrorView, TriggerCrashView, ProtectedTestView, HealthCheckView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('health/', HealthCheckView.as_view(), name='health-check'),
+    path('test-error/', TriggerErrorView.as_view()),
+    path('test-crash/', TriggerCrashView.as_view()),
+    path('test-protected/', ProtectedTestView.as_view()),
 ]
