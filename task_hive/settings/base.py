@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'users',
     'teams',
     'projects',
@@ -123,4 +124,14 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+
+# rest framework configs
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'common.exception_handlers.taskhive_exception_handler',
+    # Force the API to only return JSON so it doesn't look for HTML templates
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
 }
