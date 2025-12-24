@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Databases
+*.sqlite3
+*.db
+
+# Environment-specific settings
+taskhive/settings/dev.py
+taskhive/settings/prod.py
+# Note: Keep base.py tracked, but exclude specific environment overrides
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Media and Static
+/static/
+/media/
