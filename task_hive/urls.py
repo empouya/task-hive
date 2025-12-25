@@ -21,6 +21,7 @@ from common.views import TriggerErrorView, TriggerCrashView, ProtectedTestView, 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/users/', include('users.urls')),
+    path('api/v1/teams/', include('teams.urls')),
     path('health/', HealthCheckView.as_view(), name='health-check'),
     path('test-error/', TriggerErrorView.as_view()),
     path('test-crash/', TriggerCrashView.as_view()),
