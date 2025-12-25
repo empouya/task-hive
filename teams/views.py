@@ -21,3 +21,12 @@ class TeamCreateListView(APIView):
                 )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        user_teams = Team.objects.filter(memberships__user=request.user)
+        serializer = TeamSerializer(
+            user_teams, 
+            many=True, 
+            context={'request': request} 
+        )
+        return Response(serializer.data)
