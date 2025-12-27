@@ -30,3 +30,19 @@ class ProjectCreateListView(APIView):
             serializer.save(team=team)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, team_id):
+        team = get_object_or_404(Team, id=team_id)
+        
+        # Check if user is a member at all
+        is_member = TeamMembership.objects.filter(user=request.user, team=team).exists()
+        
+        if not is_member:
+            return Response(
+                {"error": "You do not have access to this team's projects."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        projects = team.projects.filter(status=Project.Status.ACTIVE)
+        serializer = ProjectSerializer(projects, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
