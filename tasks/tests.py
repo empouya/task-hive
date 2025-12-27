@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from teams.models import TeamMembership, Team
 from projects.models import Project
+from .models import Task
 
 User = get_user_model()
 
@@ -112,3 +113,27 @@ def test_create_task_invalid_assignee(api_client):
     
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "Assignee must be a member of the team" in str(response.data)
+
+@pytest.mark.django_db
+def test_task_reordering_logic(api_client):
+    # Setup
+    user = User.objects.create_user(email="ranker@h.com", username="ranker", password="pw")
+    team = Team.objects.create(name="Rank Team")
+    TeamMembership.objects.create(user=user, team=team)
+    project = Project.objects.create(team=team, name="Board")
+    
+    task1 = Task.objects.create(project=project, creator=user, title="Task 1", position=1.0)
+    task2 = Task.objects.create(project=project, creator=user, title="Task 2", position=2.0)
+    
+    api_client.force_authenticate(user=user)
+    
+    # Move Task 2 to be BEFORE Task 1 by giving it position 0.5
+    url = reverse('task-reorder', kwargs={'task_id': task2.id})
+    response = api_client.patch(url, {"position": 0.5})
+    
+    assert response.status_code == 200
+    
+    # Verify order in DB
+    tasks = Task.objects.filter(project=project).order_by('position')
+    assert tasks[0].title == "Task 2"
+    assert tasks[1].title == "Task 1"

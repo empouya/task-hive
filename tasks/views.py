@@ -7,6 +7,10 @@ from django.db.models import Max
 from projects.models import Project
 from teams.models import Team, TeamMembership
 from .serializers import TaskSerializer
+from .services import TaskService
+from .models import Task
+
+services = TaskService
 
 class TaskCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -36,3 +40,23 @@ class TaskCreateView(APIView):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TaskReorderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        new_position = request.data.get('position')
+
+        if not TeamMembership.objects.filter(
+            user=request.user, 
+            team=task.project.team
+        ).exists():
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        if new_position is None:
+            return Response({"error": "Position is required"}, status=400)
+
+        services.reorder_task(task, new_position)
+
+        return Response({"id": task.id, "position": task.position})
