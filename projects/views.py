@@ -46,3 +46,59 @@ class ProjectCreateListView(APIView):
         projects = team.projects.filter(status=Project.Status.ACTIVE)
         serializer = ProjectSerializer(projects, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ProjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+
+        is_admin = TeamMembership.objects.filter(team=project.team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required for this team."}, status=403)
+
+        if project.status == Project.Status.ARCHIVED:
+            return Response(
+                {"error": "Archived projects cannot be modified."},
+                status=403
+            )
+
+        if "status" in request.data:
+            return Response(
+                {"error": "You're not allowed to change the status of this project!"},
+                status=400
+            )
+
+        serializer = ProjectSerializer(project, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+class ProjectArchiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+
+        is_admin = TeamMembership.objects.filter(team=project.team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required for this team."}, status=403)
+
+        project.status = Project.Status.ARCHIVED
+        project.save()
+        return Response({"message": "Project archived. It is now read-only."}, status=200)
+
+class ProjectRestoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+
+        is_admin = TeamMembership.objects.filter(team=project.team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required for this team."}, status=403)
+
+        project.status = Project.Status.ACTIVE
+        project.save()
+        return Response({"message": "Project restored to active status."}, status=200)
