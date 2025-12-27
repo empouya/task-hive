@@ -1,10 +1,11 @@
 from django.db import transaction
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Team, TeamMembership
+from .models import Team, TeamMembership, Invitation
 from .serializers import TeamSerializer
 
 class TeamCreateListView(APIView):
@@ -65,3 +66,63 @@ class TeamDetailView(APIView):
 
         team.soft_delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class InvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, team_id):
+        team = get_object_or_404(Team, id=team_id)
+        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required"}, status=403)
+
+        email = request.data.get('email')
+
+        if not email:
+            return Response({"error": "Email is required"}, status=400)
+
+        if TeamMembership.objects.filter(team=team, user__email=email).exists():
+            return Response({"error": "User is already a member"}, status=400)
+
+        invitation, created = Invitation.objects.update_or_create(
+            team=team, email=email,
+            defaults={'invited_by': request.user, 'created_at': timezone.now()}
+        )
+
+        return Response({
+            "message": "Invitation sent",
+            "token": invitation.token
+        }, status=201)
+
+class AcceptInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        invitation = get_object_or_404(Invitation, token=token)
+
+        if not invitation.is_valid():
+            return Response({"error": "Invitation is invalid or expired"}, status=400)
+        
+        if invitation.email != request.user.email:
+            return Response({"error": "This invitation was not intended for this user"}, status=403)
+
+        with transaction.atomic():
+            TeamMembership.objects.get_or_create(
+                team=invitation.team,
+                user=request.user,
+                defaults={'role': TeamMembership.Role.MEMBER}
+            )
+            invitation.accepted_at = timezone.now()
+            invitation.save()
+
+        return Response({"message": f"Successfully joined {invitation.team.name}"})
+
+    def delete(self, request, team_id, invite_id):
+        team = get_object_or_404(Team, id=team_id)
+        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required"}, status=403)
+
+        invitation = get_object_or_404(Invitation, id=invite_id, team_id=team_id)
+        invitation.delete()
+        return Response(status=204)

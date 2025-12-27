@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
-from .models import TeamMembership, Team
+from .models import TeamMembership, Team, Invitation
 
 User = get_user_model()
 
@@ -98,3 +98,58 @@ def test_soft_delete_team_as_admin(api_client):
     assert response.status_code == 204
     assert Team.objects.filter(id=team.id).count() == 0
     assert Team.all_objects.filter(id=team.id).count() == 1
+
+@pytest.mark.django_db
+def test_invitation_flow(api_client):
+    # Setup
+    admin = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    new_user = User.objects.create_user(email="new@h.com", username="new", password="pw")
+    team = Team.objects.create(name="Growth Team")
+    TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+
+    # Admin Invites User
+    api_client.force_authenticate(user=admin)
+    res = api_client.post(reverse('invite-create', args=[team.id]), {"email": "new@h.com"})
+
+    # Test 1
+    assert res.status_code == 201
+    token = res.data['token']
+    invite = Invitation.objects.get(token=token)
+    assert invite.accepted_at is None
+
+    # New User Accepts
+    api_client.force_authenticate(user=new_user)
+    accept_url = reverse('invite-accept', args=[token])
+    res = api_client.post(accept_url)
+
+    # Test 2
+    assert res.status_code == 200
+    assert TeamMembership.objects.filter(user=new_user, team=team).exists()
+    invite = Invitation.objects.get(token=token)
+    assert invite.accepted_at is not None
+
+@pytest.mark.django_db
+def test_invitation_delete(api_client):
+    # Setup
+    admin = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    new_user = User.objects.create_user(email="new@h.com", username="new", password="pw")
+    team = Team.objects.create(name="Growth Team")
+    TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+    api_client.force_authenticate(user=admin)
+
+    # Admin Invites User
+    res = api_client.post(reverse('invite-create', args=[team.id]), {"email": "new@h.com"})
+
+    # Test 1
+    assert res.status_code == 201
+    token = res.data['token']
+    invite = Invitation.objects.get(token=token)
+    assert invite.accepted_at is None
+
+    # Admin Cancels invitation
+    accept_url = reverse('invite-delete', args=[team.id, invite.id])
+    res = api_client.delete(accept_url)
+
+    # Test 2
+    assert res.status_code == 204
+    assert not TeamMembership.objects.filter(user=new_user, team=team).exists()

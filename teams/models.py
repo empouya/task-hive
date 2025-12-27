@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
+import uuid
 
 class TeamManager(models.Manager):
     def get_queryset(self):
@@ -35,3 +37,18 @@ class TeamMembership(models.Model):
 
     class Meta:
         unique_together = ('user', 'team')
+
+class Invitation(models.Model):
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='invitations')
+    email = models.EmailField()
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    def is_valid(self):
+        expiry_date = self.created_at + timedelta(days=1)
+        return self.accepted_at is None and timezone.now() < expiry_date
+
+    def __str__(self):
+        return f"Invite to {self.email} for {self.team.name}"
