@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/v1/users/', include('users.urls')),
     path('api/v1/teams/', include('teams.urls')),
     path('api/v1/projects/', include('projects.urls')),
+    path('api/v1/tasks/', include('tasks.urls')),
     path('health/', HealthCheckView.as_view(), name='health-check'),
     path('test-error/', TriggerErrorView.as_view()),
     path('test-crash/', TriggerCrashView.as_view()),
