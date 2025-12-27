@@ -64,3 +64,37 @@ def test_list_user_teams(api_client):
     assert "Team A" in team_names
     assert "Team B" in team_names
     assert "Team C" not in team_names
+
+@pytest.mark.django_db
+def test_update_team_as_admin(api_client):
+    # Setup
+    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    team = Team.objects.create(name="To Be Updated")
+    TeamMembership.objects.create(user=user, team=team, role='ADMIN')
+    api_client.force_authenticate(user=user)
+
+    # API call
+    url = reverse('team-detail', kwargs={'team_id': team.id})
+    response = api_client.patch(url, {"name":"Updated"})
+
+    # Test
+    team.refresh_from_db()
+    assert response.status_code == 200
+    assert team.name == "Updated"
+
+@pytest.mark.django_db
+def test_soft_delete_team_as_admin(api_client):
+    # Setup
+    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    team = Team.objects.create(name="To Be Deleted")
+    TeamMembership.objects.create(user=user, team=team, role='ADMIN')
+    api_client.force_authenticate(user=user)
+
+    # API call
+    url = reverse('team-detail', kwargs={'team_id': team.id})
+    response = api_client.delete(url)
+
+    # Test
+    assert response.status_code == 204
+    assert Team.objects.filter(id=team.id).count() == 0
+    assert Team.all_objects.filter(id=team.id).count() == 1
