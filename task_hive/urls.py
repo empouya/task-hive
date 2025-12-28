@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/v1/projects/', include('projects.urls')),
     path('api/v1/tasks/', include('tasks.urls')),
     path('api/v1/comments/', include('comments.urls')),
+    path('api/v1/notifications/', include('notifications.urls')),
     path('api/v1/invites/<uuid:token>/accept/', AcceptInvitationView.as_view(), name="invite-accept"),
     path('api/v1/invites/<int:team_id>/<int:invite_id>/', AcceptInvitationView.as_view(), name="invite-delete"),
     path('health/', HealthCheckView.as_view(), name='health-check'),

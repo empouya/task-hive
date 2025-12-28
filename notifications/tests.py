@@ -33,8 +33,51 @@ def test_notification_created_on_comment(api_client):
     url = reverse('create-comment', kwargs={'task_id': task.id})
     api_client.post(url, {"content": "Checking in!"})
 
-    for notif in Notification.objects.all():
-        print(notif.__dict__)
-
     # Assert: User B should have a notification
     assert Notification.objects.filter(recipient=user_b, actor=user_a).exists()
+
+@pytest.mark.django_db
+def test_notification_list(api_client):
+    # Setup
+    user_a = User.objects.create_user(username="user_a", email="a@h.com")
+    user_b = User.objects.create_user(username="user_b", email="b@h.com")
+    team = Team.objects.create(name="T1")
+    proj = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=proj, creator=user_a, title="Task")
+    Notification.objects.create(recipient=user_b, actor=user_a, verb="developed", target_task=task)
+    Notification.objects.create(recipient=user_b, actor=user_a, verb="tested", target_task=task)
+
+    # API call
+    api_client.force_authenticate(user=user_b)
+    url = reverse('notification-list')
+    response = api_client.get(url)
+    
+    # Test
+    assert response.status_code == 200
+    assert len(response.data) == 2
+
+@pytest.mark.django_db
+def test_notification_read(api_client):
+    user_a = User.objects.create_user(username="user_a", email="a@h.com")
+    user_b = User.objects.create_user(username="user_b", email="b@h.com")
+    team = Team.objects.create(name="T1")
+    proj = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=proj, creator=user_a, title="Task")
+    note = Notification.objects.create(recipient=user_b, actor=user_a, verb="tested", target_task=task)
+
+    # API call (Not owner)
+    api_client.force_authenticate(user=user_a)
+    url = reverse('notification-read', kwargs={'notification_id': note.id})
+    response = api_client.patch(url)
+
+    # Test (Not owner)
+    assert response.status_code == 404 
+    
+    # API call (Owner)
+    api_client.force_authenticate(user=user_b)
+    response = api_client.patch(url)
+    
+    # Test (Owner)
+    note.refresh_from_db()
+    assert response.status_code == 200
+    assert note.unread is False
