@@ -30,7 +30,7 @@ def test_notification_created_on_comment(api_client):
 
     # Action: User A comments
     api_client.force_authenticate(user=user_a)
-    url = reverse('create-comment', kwargs={'task_id': task.id})
+    url = reverse('comment-create-list', kwargs={'task_id': task.id})
     api_client.post(url, {"content": "Checking in!"})
 
     # Assert: User B should have a notification

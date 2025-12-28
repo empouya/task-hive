@@ -29,7 +29,7 @@ def test_task_reordering_logic(api_client):
     
     api_client.force_authenticate(user=user2)
     
-    url = reverse('create-comment', kwargs={'task_id': task1.id})
+    url = reverse('comment-create-list', kwargs={'task_id': task1.id})
     response = api_client.post(url, {"content": "This task is so cool!"})
     assert response.status_code == 201
     

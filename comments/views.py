@@ -9,7 +9,7 @@ from .models import Comment
 from teams.models import TeamMembership
 
 
-class CommentCreateView(APIView):
+class CommentCreateListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, task_id):

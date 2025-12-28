@@ -25,7 +25,7 @@ def test_create_task_by_admin(api_client):
     
     # Task creation by admin
     api_client.force_authenticate(user=admin)
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     
     response = api_client.post(url, {"title": "new task", "assignee": member.id})
     
@@ -44,7 +44,7 @@ def test_create_task_by_member(api_client):
     
     # Task creation by admin
     api_client.force_authenticate(user=admin)
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     
     response = api_client.post(url, {"title": "new task",})
     
@@ -65,7 +65,7 @@ def test_create_task_by_not_a_member(api_client):
     stranger = User.objects.create_user(email="stranger@a.com", username="stranger", password="pw")
     
     api_client.force_authenticate(user=stranger)
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     
     response = api_client.post(url, {"title": "hack Task",})
     
@@ -84,7 +84,7 @@ def test_create_task_to_archived_project(api_client):
     project.save()
 
     api_client.force_authenticate(user=admin)
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     
     response = api_client.post(url, {"title": "new task",})
     
@@ -104,7 +104,7 @@ def test_create_task_invalid_assignee(api_client):
     stranger = User.objects.create_user(email="stranger@b.com", username="stranger", password="pw")
     
     api_client.force_authenticate(user=admin)
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     
     response = api_client.post(url, {
         "title": "Invader Task",
@@ -222,7 +222,7 @@ def test_list_task(api_client):
     api_client.force_authenticate(user=admin)
 
     # API call
-    url = reverse('task-list', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     response = api_client.get(url)
     
     # Test

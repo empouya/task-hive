@@ -19,7 +19,7 @@ def test_create_project_as_admin(api_client):
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     
     api_client.force_authenticate(user=user)
-    url = reverse('project-list-create', kwargs={'team_id': team.id})
+    url = reverse('project-create-list', kwargs={'team_id': team.id})
     response = api_client.post(url, {"name": "New API"})
     
     assert response.status_code == status.HTTP_201_CREATED
@@ -31,7 +31,7 @@ def test_create_project_as_member(api_client):
     TeamMembership.objects.create(user=user, team=team, role='MEMBER')
     
     api_client.force_authenticate(user=user)
-    url = reverse('project-list-create', kwargs={'team_id': team.id})
+    url = reverse('project-create-list', kwargs={'team_id': team.id})
     response = api_client.post(url, {"name": "Hacker Project"})
     
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -44,7 +44,7 @@ def test_get_project_as_member(api_client):
     project = Project.objects.create(team=team, name="Project1")
     
     api_client.force_authenticate(user=user)
-    url = reverse('project-list-create', kwargs={'team_id': team.id})
+    url = reverse('project-create-list', kwargs={'team_id': team.id})
     response = api_client.get(url)
     
     assert response.status_code == status.HTTP_200_OK
@@ -56,7 +56,7 @@ def test_get_project_as_non_member(api_client):
     team = Team.objects.create(name="Dev Team")
     
     api_client.force_authenticate(user=user)
-    url = reverse('project-list-create', kwargs={'team_id': team.id})
+    url = reverse('project-create-list', kwargs={'team_id': team.id})
     response = api_client.get(url)
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -136,7 +136,7 @@ def test_archived_project_is_read_only(api_client):
     api_client.force_authenticate(user=user)
     
     # API call
-    url = reverse('task-create', kwargs={'project_id': project.id})
+    url = reverse('task-create-list', kwargs={'project_id': project.id})
     response = api_client.post(url, {"title": "Impossible Task"})
     
     # Test

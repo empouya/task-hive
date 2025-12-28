@@ -21,6 +21,7 @@ from teams.views import AcceptInvitationView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/', include('task_hive.api.urls')),
     path('api/v1/users/', include('users.urls')),
     path('api/v1/teams/', include('teams.urls')),
     path('api/v1/projects/', include('projects.urls')),
@@ -28,7 +29,6 @@ urlpatterns = [
     path('api/v1/comments/', include('comments.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
     path('api/v1/invites/<uuid:token>/accept/', AcceptInvitationView.as_view(), name="invite-accept"),
-    path('api/v1/invites/<int:team_id>/<int:invite_id>/', AcceptInvitationView.as_view(), name="invite-delete"),
     path('health/', HealthCheckView.as_view(), name='health-check'),
     path('test-error/', TriggerErrorView.as_view()),
     path('test-crash/', TriggerCrashView.as_view()),

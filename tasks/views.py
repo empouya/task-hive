@@ -12,7 +12,7 @@ from .models import Task
 
 services = TaskService
 
-class TaskCreateView(APIView):
+class TaskCreateListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, project_id):
@@ -40,6 +40,17 @@ class TaskCreateView(APIView):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    def get(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+        
+        if not TeamMembership.objects.filter(user=request.user, team=project.team).exists():
+            return Response(status=403)
+
+        tasks = project.tasks.all().order_by('position')
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
 
 class TaskReorderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -120,16 +131,3 @@ class TaskAssignView(APIView):
             
         task.save()
         return Response(TaskSerializer(task).data)
-
-class TaskListView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, project_id):
-        project = get_object_or_404(Project, id=project_id)
-        
-        if not TeamMembership.objects.filter(user=request.user, team=project.team).exists():
-            return Response(status=403)
-
-        tasks = project.tasks.all().order_by('position')
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
