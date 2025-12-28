@@ -37,3 +37,32 @@ def test_task_reordering_logic(api_client):
     assert comment.content == "This task is so cool!"
     assert comment.task_id == 1
     assert comment.author_id == 2
+
+@pytest.mark.django_db
+def test_delete_comment(api_client):
+    # Setup
+    admin = User.objects.create_user(username="admin", email="a@h.com")
+    member = User.objects.create_user(username="member", email="m@h.com")
+    team = Team.objects.create(name="Mod Team")
+    TeamMembership.objects.create(user=admin, team=team, role=TeamMembership.Role.ADMIN)
+    TeamMembership.objects.create(user=member, team=team, role=TeamMembership.Role.MEMBER)
+    project = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=project, creator=admin, title="Task")
+    comment = Comment.objects.create(task=task, author=member, content="Delete me if you can!")
+    url = reverse('comment-detail', kwargs={'comment_id': comment.id})
+
+    # API call (Member)
+    api_client.force_authenticate(user=member)
+    response = api_client.delete(url)
+
+    # Test (Member)
+    assert response.status_code == 403
+    assert Comment.objects.filter(id=comment.id).exists()
+
+    #  API call (Admin)
+    api_client.force_authenticate(user=admin)
+    response = api_client.delete(url)
+
+    # Test (Admin)
+    assert response.status_code == 204
+    assert not Comment.objects.filter(id=comment.id).exists()
