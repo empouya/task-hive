@@ -137,3 +137,97 @@ def test_task_reordering_logic(api_client):
     tasks = Task.objects.filter(project=project).order_by('position')
     assert tasks[0].title == "Task 2"
     assert tasks[1].title == "Task 1"
+
+@pytest.mark.django_db
+def test_update_task(api_client):
+    # Setup
+    user1 = User.objects.create_user(username="user1", email="u1@h.com")
+    user2 = User.objects.create_user(username="user2", email="u2@h.com")
+    team = Team.objects.create(name="Dev")
+    TeamMembership.objects.create(user=user1, team=team, role='MEMBER')
+    TeamMembership.objects.create(user=user2, team=team, role='ADMIN')
+    project = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=project, creator=user2, title="To be updated")
+    api_client.force_authenticate(user=user1)
+
+    # API call
+    url = reverse('task-detail', kwargs={'task_id': task.id})
+    response = api_client.patch(url, {"title": "Updated!", "status": Task.Status.DONE})
+    
+    # Test
+    task.refresh_from_db()
+    assert response.status_code == 200
+    assert task.title == "Updated!"
+    assert task.status == Task.Status.DONE
+
+@pytest.mark.django_db
+def test_task_delete(api_client):
+    # Setup
+    user = User.objects.create_user(username="user", email="u1@h.com")
+    team = Team.objects.create(name="Dev")
+    TeamMembership.objects.create(user=user, team=team, role='MEMBER')
+    project = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=project, creator=user, title="To be updated")
+    api_client.force_authenticate(user=user)
+
+    # API call
+    url = reverse('task-detail', kwargs={'task_id': task.id})
+    response = api_client.delete(url)
+    
+    # Test
+    assert response.status_code == 204
+    assert len(Task.objects.all()) == 0
+
+@pytest.mark.django_db
+def test_reassign_task(api_client):
+    # Setup
+    user = User.objects.create_user(username="member", email="m@h.com")
+    admin = User.objects.create_user(username="admin", email="a@h.com")    
+    team = Team.objects.create(name="Dev")
+    TeamMembership.objects.create(user=user, team=team, role='MEMBER')
+    TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+    project = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=project, creator=admin, title="Work")
+
+    # API call (Member)
+    api_client.force_authenticate(user=user)
+    url = reverse('task-assign', kwargs={'task_id': task.id})
+    response = api_client.patch(url, {"assignee_id": user.id})
+    
+    # Test (Member)
+    task.refresh_from_db()
+    assert response.status_code == 403
+    assert task.assignee is None
+
+    # API call (Admin)
+    api_client.force_authenticate(user=admin)
+    url = reverse('task-assign', kwargs={'task_id': task.id})
+    response = api_client.patch(url, {"assignee_id": user.id})
+    
+    # Test (Admin)
+    task.refresh_from_db()
+    assert response.status_code == 200
+    assert task.assignee_id == user.id
+
+@pytest.mark.django_db
+def test_list_task(api_client):
+    # Setup
+    admin = User.objects.create_user(username="admin", email="a@h.com")    
+    team = Team.objects.create(name="Dev")
+    TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+    project = Project.objects.create(team=team, name="P1")
+    Task.objects.create(project=project, creator=admin, title="Task 1", position=2.0)
+    Task.objects.create(project=project, creator=admin, title="Task 2", position=1.0)
+    Task.objects.create(project=project, creator=admin, title="Task 3", position=3.0)
+    api_client.force_authenticate(user=admin)
+
+    # API call
+    url = reverse('task-list', kwargs={'project_id': project.id})
+    response = api_client.get(url)
+    
+    # Test
+    tasks = response.data
+    assert response.status_code == 200
+    assert tasks[0]["title"] == "Task 2"
+    assert tasks[1]["title"]== "Task 1"
+    assert tasks[2]["title"] == "Task 3"

@@ -60,3 +60,76 @@ class TaskReorderView(APIView):
         services.reorder_task(task, new_position)
 
         return Response({"id": task.id, "position": task.position})
+
+class TaskDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_task_and_check_access(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        is_member = TeamMembership.objects.filter(
+            user=request.user, 
+            team=task.project.team
+        ).exists()
+        
+        if not is_member:
+            return None, Response({"error": "Access denied"}, status=403)
+            
+        if task.project.status == Project.Status.ARCHIVED:
+            return None, Response({"error": "Project is archived"}, status=403)
+            
+        return task, None
+
+    def patch(self, request, task_id):
+        task, error_res = self.get_task_and_check_access(request, task_id)
+        if error_res: return error_res
+
+        serializer = TaskSerializer(task, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, task_id):
+        task, error_res = self.get_task_and_check_access(request, task_id)
+        if error_res: return error_res
+
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class TaskAssignView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        
+        is_admin = TeamMembership.objects.filter(
+            user=request.user, 
+            team=task.project.team, 
+            role=TeamMembership.Role.ADMIN
+        ).exists()
+        if not is_admin:
+            return Response({"error": "Only admins can reassign tasks."}, status=403)
+
+        new_assignee_id = request.data.get('assignee_id')
+        if new_assignee_id:
+            if not TeamMembership.objects.filter(user_id=new_assignee_id, team=task.project.team).exists():
+                return Response({"error": "User is not in this team."}, status=400)
+            task.assignee_id = new_assignee_id
+        else:
+            task.assignee = None
+            
+        task.save()
+        return Response(TaskSerializer(task).data)
+
+class TaskListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        project = get_object_or_404(Project, id=project_id)
+        
+        if not TeamMembership.objects.filter(user=request.user, team=project.team).exists():
+            return Response(status=403)
+
+        tasks = project.tasks.all().order_by('position')
+        serializer = TaskSerializer(tasks, many=True)
+        return Response(serializer.data)
