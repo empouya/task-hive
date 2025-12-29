@@ -152,3 +152,39 @@ def test_archived_project_is_read_only(api_client):
     assert response.status_code == 403
     assert "Archived" in response.data['error']
     assert project.name == "Old Project"
+
+@pytest.mark.django_db
+class TestProjectLifecycleHarden:
+    
+    def test_admin_cannot_manage_other_team_project(self, api_client):
+        """Admins should only manage projects within their own team."""
+        # Setup: Team A with Admin A
+        admin_a = User.objects.create_user(email="a@h.com", password="pw")
+        team_a = Team.objects.create(name="Team A", description="A")
+        TeamMembership.objects.create(user=admin_a, team=team_a, role='ADMIN')
+        
+        # Setup: Team B with Project B
+        team_b = Team.objects.create(name="Team B", description="B")
+        project_b = Project.objects.create(team=team_b, name="Secret B")
+        
+        # Action: Admin A tries to archive Project B
+        api_client.force_authenticate(user=admin_a)
+        url = reverse('project-archive', kwargs={'project_id': project_b.id})
+        response = api_client.post(url)
+        
+        assert response.status_code == 403
+        project_b.refresh_from_db()
+        assert project_b.status == Project.Status.ACTIVE
+
+    def test_member_cannot_archive_project(self, api_client):
+        """Project lifecycle (Archive/Restore) must be Admin-only."""
+        user = User.objects.create_user(email="mem@h.com", password="pw")
+        team = Team.objects.create(name="Devs")
+        TeamMembership.objects.create(user=user, team=team, role='MEMBER')
+        project = Project.objects.create(team=team, name="P1")
+        
+        api_client.force_authenticate(user=user)
+        url = reverse('project-archive', kwargs={'project_id': project.id})
+        response = api_client.post(url)
+        
+        assert response.status_code == 403
