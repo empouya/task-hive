@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from .models import TeamMembership, Team, Invitation
+from projects.models import Project
+from tasks.models import Task
 
 User = get_user_model()
 
@@ -153,3 +155,24 @@ def test_invitation_delete(api_client):
     # Test 2
     assert res.status_code == 204
     assert not TeamMembership.objects.filter(user=new_user, team=team).exists()
+
+@pytest.mark.django_db
+def test_removed_user_tasks_become_unassigned(api_client):
+    # Setup
+    admin = User.objects.create_user(email="a@h.com")
+    member = User.objects.create_user(email="m@h.com")
+    team = Team.objects.create(name="Cleanup Crew")
+    TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+    TeamMembership.objects.create(user=member, team=team, role='MEMBER')
+    proj = Project.objects.create(team=team, name="P1")
+    task = Task.objects.create(project=proj, creator=admin, assignee=member, title="Fix")
+
+    # API call
+    api_client.force_authenticate(user=admin)
+    url = reverse('team-member-remove', kwargs={'team_id': team.id, 'user_id': member.id})
+    api_client.delete(url)
+
+    # Test
+    task.refresh_from_db()
+    assert task.assignee is None
+    assert not TeamMembership.objects.filter(user=member, team=team).exists()

@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import Team, TeamMembership, Invitation
 from .serializers import TeamSerializer
+from tasks.models import Task
 
 class TeamCreateListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -125,4 +126,41 @@ class AcceptInvitationView(APIView):
 
         invitation = get_object_or_404(Invitation, id=invite_id, team_id=team_id)
         invitation.delete()
+        return Response(status=204)
+
+class TeamMemberManagementView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, team_id):
+        team = get_object_or_404(Team, id=team_id)
+
+        if not team.memberships.filter(user=request.user).exists():
+            return Response(status=403)
+        
+        memberships = team.memberships.all().select_related('user')
+        
+        data = [{
+            "user_id": m.user.id,
+            "email": m.user.email,
+            "role": m.role
+        } for m in memberships]
+        return Response(data)
+
+    def delete(self, request, team_id, user_id):
+        team = get_object_or_404(Team, id=team_id)
+        
+        requester_membership = get_object_or_404(TeamMembership, team=team, user=request.user)
+        if requester_membership.role != TeamMembership.Role.ADMIN:
+            return Response({"error": "Admin rights required"}, status=403)
+
+        target_membership = get_object_or_404(TeamMembership, team=team, user_id=user_id)
+
+        if target_membership.role == TeamMembership.Role.ADMIN:
+            admin_count = team.memberships.filter(role=TeamMembership.Role.ADMIN).count()
+            if admin_count <= 1:
+                return Response({"error": "Cannot remove the last admin."}, status=400)
+
+        Task.objects.filter(project__team=team, assignee_id=user_id).update(assignee=None)
+        
+        target_membership.delete()
         return Response(status=204)
