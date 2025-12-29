@@ -22,3 +22,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password_confirm')
         return User.objects.create_user(**validated_data)
 
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        user = authenticate(
+            email=attrs['email'],
+            password=attrs['password'],
+        )
+        if not user:
+            raise serializers.ValidationError("Invalid credentials")
+        attrs['user'] = user
+        return attrs

@@ -1,9 +1,10 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from users.serializers import RegisterSerializer
+from users.serializers import RegisterSerializer, LoginSerializer
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -26,3 +27,18 @@ class RegisterView(APIView):
             {"id": user.id, "email": user.email},
             status=status.HTTP_201_CREATED,
         )
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
