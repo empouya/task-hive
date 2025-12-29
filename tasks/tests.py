@@ -231,3 +231,50 @@ def test_list_task(api_client):
     assert tasks[0]["title"] == "Task 2"
     assert tasks[1]["title"]== "Task 1"
     assert tasks[2]["title"] == "Task 3"
+
+@pytest.mark.django_db
+class TestTaskHarden:
+
+    def test_list_tasks_access_denied_for_non_members(self, api_client):
+        """Users should not be able to list tasks of a project in a team they aren't in."""
+        owner = User.objects.create_user(email="owner@h.com", password="pw")
+        stranger = User.objects.create_user(email="stranger@h.com", password="pw")
+        team = Team.objects.create(name="Private Team")
+        TeamMembership.objects.create(user=owner, team=team, role='ADMIN')
+        project = Project.objects.create(team=team, name="Secret Roadmap")
+        Task.objects.create(project=project, creator=owner, title="Sensitive Task")
+
+        api_client.force_authenticate(user=stranger)
+        url = reverse('task-create-list', kwargs={'project_id': project.id})
+        response = api_client.get(url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_cannot_delete_task_in_archived_project(self, api_client):
+        """Archived projects are read-only; deletion should be blocked."""
+        admin = User.objects.create_user(email="admin@h.com", password="pw")
+        team = Team.objects.create(name="Old Team")
+        TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+        project = Project.objects.create(team=team, name="Old Project", status=Project.Status.ARCHIVED)
+        task = Task.objects.create(project=project, creator=admin, title="Old Task")
+
+        api_client.force_authenticate(user=admin)
+        url = reverse('task-detail', kwargs={'task_id': task.id})
+        response = api_client.delete(url)
+
+        assert response.status_code == 403
+        assert Task.objects.filter(id=task.id).exists()
+
+    def test_cannot_reorder_task_in_archived_project(self, api_client):
+        """Reordering (state change) should be blocked in archived projects."""
+        admin = User.objects.create_user(email="admin@h.com", password="pw")
+        team = Team.objects.create(name="Old Team")
+        TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+        project = Project.objects.create(team=team, name="Old Project", status=Project.Status.ARCHIVED)
+        task = Task.objects.create(project=project, creator=admin, title="Task", position=1.0)
+
+        api_client.force_authenticate(user=admin)
+        url = reverse('task-reorder', kwargs={'task_id': task.id})
+        response = api_client.patch(url, {"position": 2.0})
+
+        assert response.status_code == 403

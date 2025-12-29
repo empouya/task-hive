@@ -57,6 +57,10 @@ class TaskReorderView(APIView):
 
     def patch(self, request, task_id):
         task = get_object_or_404(Task, id=task_id)
+
+        if task.project.status == Project.Status.ARCHIVED:
+            return Response({"error": "Project is archived"}, status=403)
+
         new_position = request.data.get('position')
 
         if not TeamMembership.objects.filter(
