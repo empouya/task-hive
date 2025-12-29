@@ -46,12 +46,14 @@ jobs:
     - name: Run Django System Checks
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
         python manage.py check
 
     - name: Run Migrations Check
       env:
         SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
         # Checks if you forgot to create migrations for model changes
         python manage.py makemigrations --check --dry-run
