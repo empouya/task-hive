@@ -17,8 +17,8 @@ def api_client():
 @pytest.mark.django_db
 def test_task_reordering_logic(api_client):
     # Setup
-    user1 = User.objects.create_user(email="user1@h.com", username="user1", password="pw")
-    user2 = User.objects.create_user(email="user2@h.com", username="user2", password="pw")
+    user1 = User.objects.create_user(email="user1@h.com", password="pw")
+    user2 = User.objects.create_user(email="user2@h.com", password="pw")
     team = Team.objects.create(name="Comment Team")
     TeamMembership.objects.create(user=user1, team=team)
     TeamMembership.objects.create(user=user2, team=team)
@@ -41,8 +41,8 @@ def test_task_reordering_logic(api_client):
 @pytest.mark.django_db
 def test_delete_comment(api_client):
     # Setup
-    admin = User.objects.create_user(username="admin", email="a@h.com")
-    member = User.objects.create_user(username="member", email="m@h.com")
+    admin = User.objects.create_user(email="a@h.com")
+    member = User.objects.create_user(email="m@h.com")
     team = Team.objects.create(name="Mod Team")
     TeamMembership.objects.create(user=admin, team=team, role=TeamMembership.Role.ADMIN)
     TeamMembership.objects.create(user=member, team=team, role=TeamMembership.Role.MEMBER)

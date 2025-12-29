@@ -19,8 +19,8 @@ def api_client():
 @pytest.mark.django_db
 def test_notification_created_on_comment(api_client):
     # Setup: User A creates a task and assigns it to User B
-    user_a = User.objects.create_user(email="a@h.com", username="a", password="pw")
-    user_b = User.objects.create_user(email="b@h.com", username="b", password="pw")
+    user_a = User.objects.create_user(email="a@h.com", password="pw")
+    user_b = User.objects.create_user(email="b@h.com", password="pw")
     team = Team.objects.create(name="Notify Team")
     TeamMembership.objects.create(user=user_a, team=team)
     TeamMembership.objects.create(user=user_b, team=team)
@@ -39,8 +39,8 @@ def test_notification_created_on_comment(api_client):
 @pytest.mark.django_db
 def test_notification_list(api_client):
     # Setup
-    user_a = User.objects.create_user(username="user_a", email="a@h.com")
-    user_b = User.objects.create_user(username="user_b", email="b@h.com")
+    user_a = User.objects.create_user(email="a@h.com")
+    user_b = User.objects.create_user(email="b@h.com")
     team = Team.objects.create(name="T1")
     proj = Project.objects.create(team=team, name="P1")
     task = Task.objects.create(project=proj, creator=user_a, title="Task")
@@ -58,8 +58,8 @@ def test_notification_list(api_client):
 
 @pytest.mark.django_db
 def test_notification_read(api_client):
-    user_a = User.objects.create_user(username="user_a", email="a@h.com")
-    user_b = User.objects.create_user(username="user_b", email="b@h.com")
+    user_a = User.objects.create_user(email="a@h.com")
+    user_b = User.objects.create_user(email="b@h.com")
     team = Team.objects.create(name="T1")
     proj = Project.objects.create(team=team, name="P1")
     task = Task.objects.create(project=proj, creator=user_a, title="Task")

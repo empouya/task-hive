@@ -4,4 +4,6 @@ from .models import User
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('email', 'username', 'is_staff')
+    list_display = ('email', 'is_staff')
+    ordering = ('email',)
+    search_fields = ('email',)

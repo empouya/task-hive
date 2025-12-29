@@ -16,8 +16,8 @@ def api_client():
 @pytest.mark.django_db
 def test_create_task_by_admin(api_client):
     # Setup Team
-    admin = User.objects.create_user(email="admin@a.com", username="admin", password="pw")
-    member = User.objects.create_user(email="member@a.com", username="member", password="pw")
+    admin = User.objects.create_user(email="admin@a.com", password="pw")
+    member = User.objects.create_user(email="member@a.com", password="pw")
     team_a = Team.objects.create(name="Our Team")
     TeamMembership.objects.create(user=admin, team=team_a, role='ADMIN')
     TeamMembership.objects.create(user=member, team=team_a, role='MEMBER')
@@ -35,8 +35,8 @@ def test_create_task_by_admin(api_client):
 @pytest.mark.django_db
 def test_create_task_by_member(api_client):
     # Setup Team
-    admin = User.objects.create_user(email="admin@a.com", username="admin", password="pw")
-    member = User.objects.create_user(email="member@a.com", username="member", password="pw")
+    admin = User.objects.create_user(email="admin@a.com", password="pw")
+    member = User.objects.create_user(email="member@a.com", password="pw")
     team_a = Team.objects.create(name="Our Team")
     TeamMembership.objects.create(user=admin, team=team_a, role='ADMIN')
     TeamMembership.objects.create(user=member, team=team_a, role='MEMBER')
@@ -56,13 +56,13 @@ def test_create_task_by_member(api_client):
 def test_create_task_by_not_a_member(api_client):
     """A user from Team B cannot be assigned a task in Team A."""
     # Setup Team and Admin
-    admin = User.objects.create_user(email="admin@a.com", username="admin", password="pw")
+    admin = User.objects.create_user(email="admin@a.com", password="pw")
     team_a = Team.objects.create(name="Our Team")
     TeamMembership.objects.create(user=admin, team=team_a, role='ADMIN')
     project = Project.objects.create(team=team_a, name="Internal Proj")
     
     # Setup Stranger
-    stranger = User.objects.create_user(email="stranger@a.com", username="stranger", password="pw")
+    stranger = User.objects.create_user(email="stranger@a.com", password="pw")
     
     api_client.force_authenticate(user=stranger)
     url = reverse('task-create-list', kwargs={'project_id': project.id})
@@ -76,7 +76,7 @@ def test_create_task_by_not_a_member(api_client):
 def test_create_task_to_archived_project(api_client):
     """A user from Team B cannot be assigned a task in Team A."""
     # Setup Team and Admin
-    admin = User.objects.create_user(email="admin@a.com", username="admin", password="pw")
+    admin = User.objects.create_user(email="admin@a.com", password="pw")
     team_a = Team.objects.create(name="Our Team")
     TeamMembership.objects.create(user=admin, team=team_a, role='ADMIN')
     project = Project.objects.create(team=team_a, name="Internal Proj")
@@ -95,13 +95,13 @@ def test_create_task_to_archived_project(api_client):
 def test_create_task_invalid_assignee(api_client):
     """A user from Team B cannot be assigned a task in Team A."""
     # Setup Team A and Admin
-    admin = User.objects.create_user(email="admin@a.com", username="admin", password="pw")
+    admin = User.objects.create_user(email="admin@a.com", password="pw")
     team_a = Team.objects.create(name="Team A")
     TeamMembership.objects.create(user=admin, team=team_a, role='ADMIN')
     project = Project.objects.create(team=team_a, name="Internal Proj")
     
     # Setup Stranger from Team B
-    stranger = User.objects.create_user(email="stranger@b.com", username="stranger", password="pw")
+    stranger = User.objects.create_user(email="stranger@b.com", password="pw")
     
     api_client.force_authenticate(user=admin)
     url = reverse('task-create-list', kwargs={'project_id': project.id})
@@ -117,7 +117,7 @@ def test_create_task_invalid_assignee(api_client):
 @pytest.mark.django_db
 def test_task_reordering_logic(api_client):
     # Setup
-    user = User.objects.create_user(email="ranker@h.com", username="ranker", password="pw")
+    user = User.objects.create_user(email="ranker@h.com", password="pw")
     team = Team.objects.create(name="Rank Team")
     TeamMembership.objects.create(user=user, team=team)
     project = Project.objects.create(team=team, name="Board")
@@ -141,8 +141,8 @@ def test_task_reordering_logic(api_client):
 @pytest.mark.django_db
 def test_update_task(api_client):
     # Setup
-    user1 = User.objects.create_user(username="user1", email="u1@h.com")
-    user2 = User.objects.create_user(username="user2", email="u2@h.com")
+    user1 = User.objects.create_user(email="u1@h.com")
+    user2 = User.objects.create_user(email="u2@h.com")
     team = Team.objects.create(name="Dev")
     TeamMembership.objects.create(user=user1, team=team, role='MEMBER')
     TeamMembership.objects.create(user=user2, team=team, role='ADMIN')
@@ -163,7 +163,7 @@ def test_update_task(api_client):
 @pytest.mark.django_db
 def test_task_delete(api_client):
     # Setup
-    user = User.objects.create_user(username="user", email="u1@h.com")
+    user = User.objects.create_user(email="u1@h.com")
     team = Team.objects.create(name="Dev")
     TeamMembership.objects.create(user=user, team=team, role='MEMBER')
     project = Project.objects.create(team=team, name="P1")
@@ -181,8 +181,8 @@ def test_task_delete(api_client):
 @pytest.mark.django_db
 def test_reassign_task(api_client):
     # Setup
-    user = User.objects.create_user(username="member", email="m@h.com")
-    admin = User.objects.create_user(username="admin", email="a@h.com")    
+    user = User.objects.create_user(email="m@h.com")
+    admin = User.objects.create_user(email="a@h.com")    
     team = Team.objects.create(name="Dev")
     TeamMembership.objects.create(user=user, team=team, role='MEMBER')
     TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
@@ -212,7 +212,7 @@ def test_reassign_task(api_client):
 @pytest.mark.django_db
 def test_list_task(api_client):
     # Setup
-    admin = User.objects.create_user(username="admin", email="a@h.com")    
+    admin = User.objects.create_user(email="a@h.com")    
     team = Team.objects.create(name="Dev")
     TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
     project = Project.objects.create(team=team, name="P1")

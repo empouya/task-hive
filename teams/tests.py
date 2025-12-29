@@ -13,7 +13,7 @@ def api_client():
 
 @pytest.mark.django_db
 def test_create_team_authenticated(api_client):
-    user = User.objects.create_user(email="boss@hive.com", username="boss", password="pw")
+    user = User.objects.create_user(email="boss@hive.com", password="pw")
     api_client.force_authenticate(user=user)
     
     url = reverse('team-list-create')
@@ -32,8 +32,8 @@ def test_list_user_teams(api_client):
     even with multiple teams and different roles.
     """
     # 1. Setup: Two Users
-    me = User.objects.create_user(email="me@h.com", username="me", password="pw")
-    other = User.objects.create_user(email="other@h.com", username="other", password="pw")
+    me = User.objects.create_user(email="me@h.com", password="pw")
+    other = User.objects.create_user(email="other@h.com", password="pw")
     
     # 2. Setup: Teams
     from teams.models import Team, TeamMembership
@@ -68,7 +68,7 @@ def test_list_user_teams(api_client):
 @pytest.mark.django_db
 def test_update_team_as_admin(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="To Be Updated")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     api_client.force_authenticate(user=user)
@@ -85,7 +85,7 @@ def test_update_team_as_admin(api_client):
 @pytest.mark.django_db
 def test_soft_delete_team_as_admin(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="To Be Deleted")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     api_client.force_authenticate(user=user)
@@ -102,8 +102,8 @@ def test_soft_delete_team_as_admin(api_client):
 @pytest.mark.django_db
 def test_invitation_flow(api_client):
     # Setup
-    admin = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
-    new_user = User.objects.create_user(email="new@h.com", username="new", password="pw")
+    admin = User.objects.create_user(email="admin@h.com", password="pw")
+    new_user = User.objects.create_user(email="new@h.com", password="pw")
     team = Team.objects.create(name="Growth Team")
     TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
 
@@ -131,8 +131,8 @@ def test_invitation_flow(api_client):
 @pytest.mark.django_db
 def test_invitation_delete(api_client):
     # Setup
-    admin = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
-    new_user = User.objects.create_user(email="new@h.com", username="new", password="pw")
+    admin = User.objects.create_user(email="admin@h.com", password="pw")
+    new_user = User.objects.create_user(email="new@h.com", password="pw")
     team = Team.objects.create(name="Growth Team")
     TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
     api_client.force_authenticate(user=admin)

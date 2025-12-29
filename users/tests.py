@@ -23,7 +23,6 @@ def test_me_endpoint_authorized(api_client):
     """Logged in users should get their data."""
     user = User.objects.create_user(
         email="tester@taskhive.com",
-        username="tester",
         password="password123"
     )
     url = reverse('me')
@@ -34,3 +33,17 @@ def test_me_endpoint_authorized(api_client):
     
     assert response.status_code == status.HTTP_200_OK
     assert response.data['email'] == "tester@taskhive.com"
+
+@pytest.mark.django_db
+def test_register_user(api_client):
+    # API call
+    url = reverse('register')
+    response = api_client.post(url, {
+        "email": "newuser@taskhive.com",
+        "password": "StrongPass123",
+        "password_confirm": "StrongPass123",
+    })
+
+    # Test
+    assert response.status_code == status.HTTP_201_CREATED
+    assert User.objects.filter(email="newuser@taskhive.com").exists()

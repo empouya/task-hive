@@ -14,7 +14,7 @@ def api_client():
 
 @pytest.mark.django_db
 def test_create_project_as_admin(api_client):
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="Dev Team")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     
@@ -26,7 +26,7 @@ def test_create_project_as_admin(api_client):
 
 @pytest.mark.django_db
 def test_create_project_as_member(api_client):
-    user = User.objects.create_user(email="mem@h.com", username="mem", password="pw")
+    user = User.objects.create_user(email="mem@h.com", password="pw")
     team = Team.objects.create(name="Dev Team")
     TeamMembership.objects.create(user=user, team=team, role='MEMBER')
     
@@ -38,7 +38,7 @@ def test_create_project_as_member(api_client):
 
 @pytest.mark.django_db
 def test_get_project_as_member(api_client):
-    user = User.objects.create_user(email="mem@h.com", username="mem", password="pw")
+    user = User.objects.create_user(email="mem@h.com", password="pw")
     team = Team.objects.create(name="Dev Team")
     TeamMembership.objects.create(user=user, team=team, role='MEMBER')
     project = Project.objects.create(team=team, name="Project1")
@@ -52,7 +52,7 @@ def test_get_project_as_member(api_client):
 
 @pytest.mark.django_db
 def test_get_project_as_non_member(api_client):
-    user = User.objects.create_user(email="mem@h.com", username="mem", password="pw")
+    user = User.objects.create_user(email="mem@h.com", password="pw")
     team = Team.objects.create(name="Dev Team")
     
     api_client.force_authenticate(user=user)
@@ -65,7 +65,7 @@ def test_get_project_as_non_member(api_client):
 @pytest.mark.django_db
 def test_project_update(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="Engineering")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     project = Project.objects.create(team=team, name="Project to be updated")
@@ -93,7 +93,7 @@ def test_project_update(api_client):
 @pytest.mark.django_db
 def test_archived_project(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="Engineering")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     project = Project.objects.create(team=team, name="Project")
@@ -111,7 +111,7 @@ def test_archived_project(api_client):
 @pytest.mark.django_db
 def test_restore_project(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="Engineering")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     project = Project.objects.create(team=team, name="Project", status=Project.Status.ARCHIVED)
@@ -129,7 +129,7 @@ def test_restore_project(api_client):
 @pytest.mark.django_db
 def test_archived_project_is_read_only(api_client):
     # Setup
-    user = User.objects.create_user(email="admin@h.com", username="admin", password="pw")
+    user = User.objects.create_user(email="admin@h.com", password="pw")
     team = Team.objects.create(name="Engineering")
     TeamMembership.objects.create(user=user, team=team, role='ADMIN')
     project = Project.objects.create(team=team, name="Old Project", status=Project.Status.ARCHIVED)
