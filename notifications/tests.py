@@ -81,3 +81,39 @@ def test_notification_read(api_client):
     note.refresh_from_db()
     assert response.status_code == 200
     assert note.unread is False
+
+@pytest.mark.django_db
+class TestNotificationHarden:
+    def test_notification_privacy_strict(self, api_client):
+        """Users should only see their own notification list, never others."""
+        user_a = User.objects.create_user(email="a@h.com")
+        user_b = User.objects.create_user(email="b@h.com")
+        team = Team.objects.create(name="T1")
+        proj = Project.objects.create(team=team, name="P1")
+        task = Task.objects.create(project=proj, creator=user_a, title="Task")
+        
+        # Create note for B
+        Notification.objects.create(recipient=user_b, actor=user_a, verb="messaged", target_task=task)
+
+        # User A checks their list
+        api_client.force_authenticate(user=user_a)
+        response = api_client.get(reverse('notification-list'))
+        
+        assert response.status_code == 200
+        assert len(response.data) == 0 # User A's inbox is empty
+
+    def test_notification_cascade_on_task_deletion(self, api_client):
+        """Notifications should be cleaned up if the target task is deleted."""
+        user_a = User.objects.create_user(email="a@h.com")
+        user_b = User.objects.create_user(email="b@h.com")
+        team = Team.objects.create(name="T1")
+        proj = Project.objects.create(team=team, name="P1")
+        task = Task.objects.create(project=proj, creator=user_a, title="Task")
+        Notification.objects.create(recipient=user_b, actor=user_a, verb="notified", target_task=task)
+
+        # Delete Task
+        task.delete()
+
+        # Assert: Notification should be gone (if using CASCADE) 
+        # or target_task should be null (if using SET_NULL)
+        assert Notification.objects.filter(recipient=user_b).count() == 0
