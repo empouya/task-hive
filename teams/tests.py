@@ -176,3 +176,67 @@ def test_removed_user_tasks_become_unassigned(api_client):
     task.refresh_from_db()
     assert task.assignee is None
     assert not TeamMembership.objects.filter(user=member, team=team).exists()
+
+@pytest.mark.django_db
+class TestTeamSecurityHarden:
+    
+    def test_member_cannot_delete_team(self, api_client):
+        """Only ADMINs should be allowed to soft-delete a team."""
+        user = User.objects.create_user(email="member@h.com", password="pw")
+        team = Team.objects.create(name="Secure Team")
+        TeamMembership.objects.create(user=user, team=team, role=TeamMembership.Role.MEMBER)
+        
+        api_client.force_authenticate(user=user)
+        url = reverse('team-detail', kwargs={'team_id': team.id})
+        response = api_client.delete(url)
+        
+        assert response.status_code == 403
+        assert Team.objects.filter(id=team.id).exists()
+
+    def test_cannot_remove_last_admin(self, api_client):
+        """A team must always have at least one admin."""
+        admin = User.objects.create_user(email="last_admin@h.com", password="pw")
+        team = Team.objects.create(name="Lonely Team")
+        TeamMembership.objects.create(user=admin, team=team, role=TeamMembership.Role.ADMIN)
+        
+        api_client.force_authenticate(user=admin)
+        url = reverse('team-member-remove', kwargs={'team_id': team.id, 'user_id': admin.id})
+        response = api_client.delete(url)
+        
+        assert response.status_code == 400
+        assert "last admin" in response.data['error'].lower()
+
+@pytest.mark.django_db
+class TestInvitationHarden:
+
+    def test_cannot_accept_invitation_for_different_email(self, api_client):
+        """Invitations are bound to specific email addresses."""
+        admin = User.objects.create_user(email="admin@h.com", password="pw")
+        wrong_user = User.objects.create_user(email="wrong@h.com", password="pw")
+        team = Team.objects.create(name="Private Team")
+        TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+        
+        # Invite intended for 'target@h.com'
+        invite = Invitation.objects.create(team=team, email="target@h.com", invited_by=admin)
+        
+        api_client.force_authenticate(user=wrong_user)
+        url = reverse('invite-accept', args=[invite.token])
+        response = api_client.post(url)
+        
+        assert response.status_code == 403
+        assert not TeamMembership.objects.filter(user=wrong_user, team=team).exists()
+
+    def test_invite_user_already_in_team(self, api_client):
+        """Prevent redundant invitations for existing members."""
+        admin = User.objects.create_user(email="admin@h.com", password="pw")
+        member = User.objects.create_user(email="member@h.com", password="pw")
+        team = Team.objects.create(name="Full Team")
+        TeamMembership.objects.create(user=admin, team=team, role='ADMIN')
+        TeamMembership.objects.create(user=member, team=team, role='MEMBER')
+        
+        api_client.force_authenticate(user=admin)
+        url = reverse('invite-create', args=[team.id])
+        response = api_client.post(url, {"email": "member@h.com"})
+        
+        assert response.status_code == 400
+        assert "already a member" in response.data['error'].lower()
