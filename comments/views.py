@@ -7,6 +7,7 @@ from tasks.models import Task
 from .serializers import CommentSerializer
 from .models import Comment
 from teams.models import TeamMembership
+from projects.models import Project
 
 
 class CommentCreateListView(APIView):
@@ -17,6 +18,9 @@ class CommentCreateListView(APIView):
         
         if not task.project.team.memberships.filter(user=request.user).exists():
             return Response(status=403)
+
+        if task.project.status == Project.Status.ARCHIVED:
+            return Response({"error": "Project is archived"}, status=403)
 
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():

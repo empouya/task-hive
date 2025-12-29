@@ -66,3 +66,70 @@ def test_delete_comment(api_client):
     # Test (Admin)
     assert response.status_code == 204
     assert not Comment.objects.filter(id=comment.id).exists()
+
+@pytest.mark.django_db
+class TestCommentSecurityHarden:
+
+    def test_cannot_comment_on_other_team_task(self, api_client):
+        """Users should not be able to comment on tasks outside their team."""
+        owner = User.objects.create_user(email="owner@h.com", password="pw")
+        stranger = User.objects.create_user(email="stranger@h.com", password="pw")
+        team = Team.objects.create(name="Private Team")
+        TeamMembership.objects.create(user=owner, team=team, role='ADMIN')
+        
+        project = Project.objects.create(team=team, name="Secret")
+        task = Task.objects.create(project=project, creator=owner, title="Task")
+
+        api_client.force_authenticate(user=stranger)
+        url = reverse('comment-create-list', kwargs={'task_id': task.id})
+        response = api_client.post(url, {"content": "I shouldn't be here"})
+
+        assert response.status_code == 403
+
+    def test_cannot_comment_on_archived_project_task(self, api_client):
+        """Tasks in archived projects should not accept new comments."""
+        user = User.objects.create_user(email="u@h.com", password="pw")
+        team = Team.objects.create(name="T1")
+        TeamMembership.objects.create(user=user, team=team)
+        
+        # Setup Archived Project
+        project = Project.objects.create(team=team, name="Old", status=Project.Status.ARCHIVED)
+        task = Task.objects.create(project=project, creator=user, title="Frozen Task")
+
+        api_client.force_authenticate(user=user)
+        url = reverse('comment-create-list', kwargs={'task_id': task.id})
+        response = api_client.post(url, {"content": "Attempting to comment"})
+
+        assert response.status_code == 403 # Or 400 depending on your check
+
+    def test_comments_deleted_on_task_cascade(self, api_client):
+        """If a task is deleted, its comments must be purged."""
+        user = User.objects.create_user(email="u@h.com", password="pw")
+        team = Team.objects.create(name="T1")
+        TeamMembership.objects.create(user=user, team=team, role='ADMIN')
+        project = Project.objects.create(team=team, name="P1")
+        task = Task.objects.create(project=project, creator=user, title="Task")
+        Comment.objects.create(task=task, author=user, content="Permanent record?")
+
+        # Delete Task
+        task.delete()
+
+        assert Comment.objects.filter(task_id=task.id).count() == 0
+
+    def test_comment_update_is_not_allowed(self, api_client):
+        """Ensure no PATCH/PUT endpoint exists to edit comments."""
+        user = User.objects.create_user(email="u@h.com", password="pw")
+        team = Team.objects.create(name="T1")
+        TeamMembership.objects.create(user=user, team=team, role='ADMIN')
+        project = Project.objects.create(team=team, name="P1")
+        task = Task.objects.create(project=project, creator=user, title="Task")
+        comment = Comment.objects.create(task=task, author=user, content="Original")
+
+        api_client.force_authenticate(user=user)
+        url = reverse('comment-detail', kwargs={'comment_id': comment.id})
+        
+        # Attempt to Update
+        response = api_client.patch(url, {"content": "Hacker Edit"})
+        
+        # Should be 405 Method Not Allowed if not implemented, or 403 if restricted
+        assert response.status_code in [405, 403]
