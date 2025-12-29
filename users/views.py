@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from users.serializers import RegisterSerializer, LoginSerializer
+from users.serializers import RegisterSerializer, LoginSerializer, LogoutSerializer
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -42,3 +42,12 @@ class LoginView(APIView):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         })
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -78,3 +78,61 @@ def test_login_fail(api_client):
     # TODO: it should return 401 status code
     assert response.status_code == 400
     assert response.data["error_code"] == "invalid"
+
+@pytest.mark.django_db
+def test_token_refresh_returns_new_access(api_client):
+    User.objects.create_user(
+        email="tester@taskhive.com",
+        password="password123"
+    )
+
+    login_url = reverse('login')
+    refresh_url = reverse('token-refresh')
+
+    login_response = api_client.post(login_url, {
+        "email": "tester@taskhive.com",
+        "password": "password123",
+    })
+
+    refresh_token = login_response.data["refresh"]
+
+    response = api_client.post(refresh_url, {
+        "refresh": refresh_token
+    })
+
+    assert response.status_code == 200
+    assert "access" in response.data
+
+@pytest.mark.django_db
+def test_logout_blacklists_refresh_token(api_client):
+    User.objects.create_user(
+        email="tester@taskhive.com",
+        password="password123"
+    )
+
+    login_url = reverse('login')
+    logout_url = reverse('logout')
+    refresh_url = reverse('token-refresh')
+
+    login_response = api_client.post(login_url, {
+        "email": "tester@taskhive.com",
+        "password": "password123",
+    })
+
+    api_client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}"
+    )
+
+    logout_response = api_client.post(logout_url, {
+        "refresh": login_response.data["refresh"]
+    })
+
+    assert logout_response.status_code == 204
+
+    # Refresh should now fail
+    refresh_response = api_client.post(refresh_url, {
+        "refresh": login_response.data["refresh"]
+    })
+
+    # TODO: it should return 401 status code
+    assert refresh_response.status_code == 401

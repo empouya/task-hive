@@ -35,3 +35,10 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid credentials")
         attrs['user'] = user
         return attrs
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def save(self):
+        token = RefreshToken(self.validated_data['refresh'])
+        token.blacklist()
