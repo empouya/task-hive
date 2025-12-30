@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/
+    environment:
+      - POSTGRES_DB=taskhive
+      - POSTGRES_USER=emp
+      - POSTGRES_PASSWORD=12345
+    ports:
+      - "5433:5432"
+
+  web:
+    build: .
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=task_hive.settings.prod
+      - DATABASE_URL=postgres://emp:12345@db:5432/taskhive
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  static_volume:

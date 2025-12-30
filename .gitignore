@@ -26,3 +26,4 @@ Thumbs.db
 # Media and Static
 /static/
 /media/
+/staticfiles/
