@@ -4,7 +4,7 @@ TaskHive is a **Django REST API** for team-based project and task management.
 It was built to simulate a real backend engineering lifecycle — from requirements clarification to deployment and observability — with a strong focus on **clean architecture, explicit business rules, and operational readiness**.
 
 
-[![Python Version](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
 [![Django Version](https://img.shields.io/badge/django-6.0-green.svg)](https://www.djangoproject.com/)
 [![Test Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
