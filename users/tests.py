@@ -99,11 +99,8 @@ def test_token_refresh_returns_new_access(api_client):
     })
 
     refresh_url = reverse('token-refresh')
-    refresh_token = login_response.cookies.get("refresh_token").value
 
-    response = api_client.post(refresh_url, {
-        "refresh": refresh_token
-    })
+    response = api_client.post(refresh_url)
 
     # Test
     assert response.status_code == 200
@@ -174,7 +171,7 @@ class TestTokenHarden:
     def test_refresh_token_invalid(self, api_client):
         """Sending a junk string as a refresh token should fail."""
         url = reverse('token-refresh')
-        response = api_client.post(url, {"refresh": "not-a-real-token"})
+        response = api_client.post(url)
         assert response.status_code == 401
 
     def test_logout_without_token(self, api_client):
