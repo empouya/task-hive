@@ -1,9 +1,11 @@
+from django.conf import settings
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from users.serializers import RegisterSerializer, LoginSerializer, LogoutSerializer
 
 class MeView(APIView):
@@ -32,16 +34,32 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        try:
+            serializer = LoginSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            validated = serializer.validated_data
+            refresh = validated[0]
+            payload = validated[1]
+            response = Response(payload, status=status.HTTP_200_OK)
 
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
+            # Set refresh token in HttpOnly cookie
+            cookie_max_age = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
+            response.set_cookie(
+                key="refresh_token",
+                value=str(refresh),
+                httponly=True,
+                secure=False,            # True in production (HTTPS)
+                samesite="Lax",          # 'Strict' or 'Lax' depending on behavior you want
+                max_age=cookie_max_age,
+                path="/",  # cookie accessible for refresh endpoint
+            )
 
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        })
+            return response
+        except AuthenticationFailed as e:
+            return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]

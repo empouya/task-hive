@@ -66,7 +66,9 @@ def test_login_success(api_client):
     # Test
     assert response.status_code == 200
     assert "access" in response.data
-    assert "refresh" in response.data
+    assert "refresh_token" in response.cookies
+    assert response.cookies["refresh_token"]["httponly"] is True
+    assert response.data['user']['email'] == 'tester@taskhive.com'
 
 @pytest.mark.django_db
 def test_login_fail(api_client):
@@ -78,9 +80,8 @@ def test_login_fail(api_client):
     })
 
     # Test
-    # TODO: it should return 401 status code
-    assert response.status_code == 400
-    assert response.data["error_code"] == "invalid"
+    assert response.status_code == 401
+    assert "Invalid email or password." in response.data["error"] 
 
 @pytest.mark.django_db
 def test_token_refresh_returns_new_access(api_client):
@@ -98,7 +99,7 @@ def test_token_refresh_returns_new_access(api_client):
     })
 
     refresh_url = reverse('token-refresh')
-    refresh_token = login_response.data["refresh"]
+    refresh_token = login_response.cookies.get("refresh_token").value
 
     response = api_client.post(refresh_url, {
         "refresh": refresh_token
@@ -131,7 +132,7 @@ def test_logout_blacklists_refresh_token(api_client):
     )
 
     logout_response = api_client.post(logout_url, {
-        "refresh": login_response.data["refresh"]
+        "refresh": login_response.cookies.get("refresh_token").value
     })
 
     # Test (success)
@@ -139,7 +140,7 @@ def test_logout_blacklists_refresh_token(api_client):
 
     # Test (Refresh should fail)
     refresh_response = api_client.post(refresh_url, {
-        "refresh": login_response.data["refresh"]
+        "refresh": login_response.cookies.get("refresh_token").value
     })
 
     assert refresh_response.status_code == 401
