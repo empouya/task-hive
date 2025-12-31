@@ -56,10 +56,3 @@ class LoginSerializer(serializers.Serializer):
                 "email": user.email,
             }
         }]
-
-class LogoutSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
-
-    def save(self):
-        token = RefreshToken(self.validated_data['refresh'])
-        token.blacklist()

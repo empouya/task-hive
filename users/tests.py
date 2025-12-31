@@ -128,17 +128,13 @@ def test_logout_blacklists_refresh_token(api_client):
         HTTP_AUTHORIZATION=f"Bearer {login_response.data['access']}"
     )
 
-    logout_response = api_client.post(logout_url, {
-        "refresh": login_response.cookies.get("refresh_token").value
-    })
+    logout_response = api_client.post(logout_url)
 
     # Test (success)
     assert logout_response.status_code == 204
 
     # Test (Refresh should fail)
-    refresh_response = api_client.post(refresh_url, {
-        "refresh": login_response.cookies.get("refresh_token").value
-    })
+    refresh_response = api_client.post(refresh_url)
 
     assert refresh_response.status_code == 401
 

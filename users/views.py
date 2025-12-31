@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from users.serializers import RegisterSerializer, LoginSerializer, LogoutSerializer
+from users.serializers import RegisterSerializer, LoginSerializer
 from django.contrib.auth import get_user_model
 
 
@@ -119,7 +119,23 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = LogoutSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if not refresh_token:
+            return Response({"error": "Token is not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        resp = Response(status=status.HTTP_204_NO_CONTENT)
+
+        # Clear cookie (expires it)
+        resp.delete_cookie("refresh_token", path="/")
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception as e:
+                # token might be invalid or blacklist app not configured
+                pass
+
+        return resp
