@@ -31,7 +31,7 @@ class TaskCreateListView(APIView):
             if assignee and not TeamMembership.objects.filter(user=assignee, team=team).exists():
                 return Response({"error": "Assignee must be a member of the team."}, status=400)
 
-            max_pos = project.tasks.aggregate(Max('position'))['position__max'] or 0
+            max_pos = float(project.tasks.aggregate(Max('position'))['position__max']) or 0
             
             serializer.save(
                 project=project,
