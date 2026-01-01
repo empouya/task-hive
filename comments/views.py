@@ -25,8 +25,32 @@ class CommentCreateListView(APIView):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(author=request.user, task=task)
-            return Response(serializer.data, status=201)
+            payload = serializer.data
+        
+            payload['author'] = {
+                'id': str(request.user.id),
+                'email': request.user.email
+            }
+            return Response(payload, status=201)
         return Response(serializer.errors, status=400)
+
+    def get(self, request, task_id):
+        task = get_object_or_404(Task, id=task_id)
+        
+        if not task.project.team.memberships.filter(user=request.user).exists():
+            return Response(status=403)
+
+        comments = task.comments.select_related('author').all().order_by('created_at')
+        serializer = CommentSerializer(comments, many=True)
+        payload = serializer.data
+
+        for i, comment_obj in enumerate(comments):
+            payload[i]['author'] = {
+                'id': str(comment_obj.author.id),
+                'email': comment_obj.author.email,
+            }
+
+        return Response(payload)
 
 class CommentDetailView(APIView):
     permission_classes = [IsAuthenticated]
