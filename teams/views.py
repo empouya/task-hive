@@ -87,13 +87,33 @@ class InvitationView(APIView):
 
         invitation, created = Invitation.objects.update_or_create(
             team=team, email=email,
-            defaults={'invited_by': request.user, 'created_at': timezone.now()}
+            defaults={'invited_by': request.user, 'created_at': timezone.now(), 'accepted_at': None}
         )
 
         return Response({
-            "message": "Invitation sent",
-            "token": invitation.token
+            "id": str(invitation.id),
+            "email": invitation.email,
+            "token": str(invitation.token),
+            "created_at": invitation.created_at.isoformat(),
         }, status=201)
+
+    def get(self, request, team_id):
+        team = get_object_or_404(Team, id=team_id)
+
+        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
+        if not is_admin:
+            return Response({"error": "Admin rights required"}, status=403)
+
+        invites = Invitation.objects.filter(team=team, accepted_at__isnull=True)
+        
+        data = [{
+            "id": str(i.id),
+            "email": i.email,
+            "token": str(i.token),
+            "created_at": i.created_at.isoformat(),
+        } for i in invites]
+        
+        return Response(data)
 
 class AcceptInvitationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -140,7 +160,7 @@ class TeamMemberManagementView(APIView):
         memberships = team.memberships.all().select_related('user')
         
         data = [{
-            "user_id": m.user.id,
+            "id": m.user.id,
             "email": m.user.email,
             "role": m.role
         } for m in memberships]
