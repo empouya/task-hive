@@ -27,3 +27,6 @@ Thumbs.db
 /static/
 /media/
 /staticfiles/
+
+taskhive-codebase-summary.md
+repomix.config.json
