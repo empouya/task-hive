@@ -22,7 +22,6 @@ from teams.views import AcceptInvitationView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('task_hive.api.urls')),
-    path('api/v2/', include('task_hive.api.v2_urls')),
     path('api/v1/auth/', include('users.urls')),
     path('api/v1/teams/', include('teams.urls')),
     path('api/v1/projects/', include('projects.urls')),

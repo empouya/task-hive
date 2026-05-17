@@ -16,8 +16,9 @@ def test_auth_me_unauthorized(api_client):
     response = api_client.get(url)
 
     # Test
-    assert response.status_code == 401
-    assert response.data['error_code'] == 'not_authenticated'
+    assert response.data['type'] == 'https://taskhive.com/errors/not_authenticated'
+    assert response.data['status'] == 401
+    assert response.data['trace_id'].startswith('req-')
 
 @pytest.mark.django_db
 def test_auth_me_authorized(api_client):

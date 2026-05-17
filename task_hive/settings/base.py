@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
+    'common.middleware.RequestTraceIdMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -151,10 +152,10 @@ LOGGING = {
 
 # rest framework configs
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'common.exception_handlers.taskhive_exception_handler',
+    'EXCEPTION_HANDLER': 'common.api.exception_handlers.taskhive_exception_handler',
     # Force the API to only return JSON so it doesn't look for HTML templates
     'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+        'common.api.renderers.JSendJSONRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
