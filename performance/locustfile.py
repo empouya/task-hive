@@ -54,7 +54,7 @@ class TaskHiveUser(HttpUser):
             headers=self.auth_headers(),
             json={
                 "name": f"Load Team {uuid.uuid4().hex[:8]}",
-                "description": "Created by Locust",
+                "description": f"Created by Locust {uuid.uuid4().hex[:8]}",
             },
             name="teams:create",
         )
