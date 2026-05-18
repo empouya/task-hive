@@ -46,6 +46,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'common.middleware.RequestTraceIdMiddleware',
+    'common.idempotency.IdempotencyMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -109,6 +110,26 @@ DATABASES = {
     }
 }
 
+REDIS_URL = env("REDIS_URL", default=None)
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "taskhive-local-memory-cache",
+        }
+    }
+
 
 # Logging config
 LOGGING = {
@@ -153,17 +174,24 @@ LOGGING = {
 # rest framework configs
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'common.api.exception_handlers.taskhive_exception_handler',
-    # Force the API to only return JSON so it doesn't look for HTML templates
     'DEFAULT_RENDERER_CLASSES': [
         'common.api.renderers.JSendJSONRenderer',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.RedisBlocklistJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '60/min',
+        'user': '1000/min',
+    },
 }
 
 SIMPLE_JWT = {

@@ -12,6 +12,11 @@ services:
     ports:
       - "5433:5432"
 
+  redis:
+    image: redis:8.6
+    ports:
+      - "6379:6379"
+
   web:
     build: .
     env_file:
@@ -19,6 +24,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=task_hive.settings.prod
       - DATABASE_URL=postgres://emp:12345@db:5432/taskhive
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -26,6 +32,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
 
 volumes:
   postgres_data:

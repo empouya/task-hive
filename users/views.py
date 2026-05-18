@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+from users.tokens import revoke_access_token, revoke_refresh_token
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -120,22 +121,24 @@ class LogoutView(APIView):
 
     def post(self, request):
         refresh_token = request.COOKIES.get("refresh_token")
+        auth_header = request.headers.get("Authorization", "")
 
-        if not refresh_token:
-            return Response({"error": "Token is not provided"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        if not refresh_token and not auth_header.startswith("Bearer "):
+            return Response({"error": "Token is not provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         resp = Response(status=status.HTTP_204_NO_CONTENT)
-
-        # Clear cookie (expires it)
         resp.delete_cookie("refresh_token", path="/")
+
+        if auth_header.startswith("Bearer "):
+            try:
+                revoke_access_token(auth_header.split(" ", 1)[1])
+            except Exception:
+                pass
 
         if refresh_token:
             try:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-            except Exception as e:
-                # token might be invalid or blacklist app not configured
+                revoke_refresh_token(refresh_token)
+            except Exception:
                 pass
 
         return resp
