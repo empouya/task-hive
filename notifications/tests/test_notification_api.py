@@ -7,14 +7,9 @@ from teams.models import TeamMembership, Team
 from projects.models import Project
 from tasks.models import Task
 from comments.models import Comment
-from .models import Notification
+from notifications.models import Notification
 
 User = get_user_model()
-
-@pytest.fixture
-def api_client():
-    return APIClient()
-
 
 @pytest.mark.django_db
 def test_notification_created_on_comment(api_client):
@@ -116,4 +111,6 @@ class TestNotificationHarden:
 
         # Assert: Notification should be gone (if using CASCADE) 
         # or target_task should be null (if using SET_NULL)
-        assert Notification.objects.filter(recipient=user_b).count() == 0
+        assert Notification.objects.filter(recipient=user_b).count() == 1
+        assert not Task.objects.filter(id=task.id).exists()
+        assert Task.all_objects.filter(id=task.id, is_deleted=True).exists()

@@ -1,186 +1,114 @@
-from django.db import transaction
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Team, TeamMembership, Invitation
-from .serializers import TeamSerializer
-from tasks.models import Task
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from teams import services
+from teams.serializers import TeamSerializer
+
 
 class TeamCreateListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = TeamSerializer(data=request.data)
-        if serializer.is_valid():
-            with transaction.atomic():
-                team = serializer.save()
-                TeamMembership.objects.create(
-                    user=request.user,
-                    team=team,
-                    role=TeamMembership.Role.ADMIN
-                )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+
+        team = services.create_team(
+            user=request.user,
+            data=serializer.validated_data,
+        )
+
+        return Response(
+            TeamSerializer(team, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     def get(self, request):
-        user_teams = Team.objects.filter(memberships__user=request.user)
-        serializer = TeamSerializer(
-            user_teams, 
-            many=True, 
-            context={'request': request} 
-        )
+        teams = services.list_user_teams(user=request.user)
+        serializer = TeamSerializer(teams, many=True, context={"request": request})
         return Response(serializer.data)
+
 
 class TeamDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, team_id, user):
-        team = get_object_or_404(Team, id=team_id)
-        is_admin = TeamMembership.objects.filter(
-            team=team, 
-            user=user, 
-            role=TeamMembership.Role.ADMIN
-        ).exists()
-        
-        if not is_admin:
-            return None
-        return team
-
     def patch(self, request, team_id):
-        team = self.get_object(team_id, request.user)
-        if not team:
-            return Response({"error": "Admin rights required"}, status=403)
-
-        serializer = TeamSerializer(team, data=request.data, partial=True, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        team = services.update_team(
+            user=request.user,
+            team_id=team_id,
+            serializer_class=TeamSerializer,
+            data=request.data,
+        )
+        return Response(TeamSerializer(team, context={"request": request}).data)
 
     def delete(self, request, team_id):
-        team = self.get_object(team_id, request.user)
-        if not team:
-            return Response({"error": "Admin rights required"}, status=403)
-
-        team.soft_delete()
+        services.soft_delete_team(user=request.user, team_id=team_id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class InvitationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, team_id):
-        team = get_object_or_404(Team, id=team_id)
-        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
-        if not is_admin:
-            return Response({"error": "Admin rights required"}, status=403)
-
-        email = request.data.get('email')
-
-        if not email:
-            return Response({"error": "Email is required"}, status=400)
-
-        if TeamMembership.objects.filter(team=team, user__email=email).exists():
-            return Response({"error": "User is already a member"}, status=400)
-
-        invitation, created = Invitation.objects.update_or_create(
-            team=team, email=email,
-            defaults={'invited_by': request.user, 'created_at': timezone.now(), 'accepted_at': None}
+        invitation = services.create_invitation(
+            user=request.user,
+            team_id=team_id,
+            email=request.data.get("email"),
         )
-
-        return Response({
-            "id": str(invitation.id),
-            "email": invitation.email,
-            "token": str(invitation.token),
-            "created_at": invitation.created_at.isoformat(),
-        }, status=201)
+        return Response(_invitation_payload(invitation), status=status.HTTP_201_CREATED)
 
     def get(self, request, team_id):
-        team = get_object_or_404(Team, id=team_id)
+        invitations = services.list_pending_invitations(
+            user=request.user,
+            team_id=team_id,
+        )
+        return Response([_invitation_payload(invitation) for invitation in invitations])
 
-        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
-        if not is_admin:
-            return Response({"error": "Admin rights required"}, status=403)
-
-        invites = Invitation.objects.filter(team=team, accepted_at__isnull=True)
-        
-        data = [{
-            "id": str(i.id),
-            "email": i.email,
-            "token": str(i.token),
-            "created_at": i.created_at.isoformat(),
-        } for i in invites]
-        
-        return Response(data)
 
 class AcceptInvitationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, token):
-        invitation = get_object_or_404(Invitation, token=token)
-
-        if not invitation.is_valid():
-            return Response({"error": "Invitation is invalid or expired"}, status=400)
-        
-        if invitation.email != request.user.email:
-            return Response({"error": "This invitation was not intended for this user"}, status=403)
-
-        with transaction.atomic():
-            TeamMembership.objects.get_or_create(
-                team=invitation.team,
-                user=request.user,
-                defaults={'role': TeamMembership.Role.MEMBER}
-            )
-            invitation.accepted_at = timezone.now()
-            invitation.save()
-
+        invitation = services.accept_invitation(user=request.user, token=token)
         return Response({"message": f"Successfully joined {invitation.team.name}"})
 
     def delete(self, request, team_id, invite_id):
-        team = get_object_or_404(Team, id=team_id)
-        is_admin = TeamMembership.objects.filter(team=team, user=request.user, role=TeamMembership.Role.ADMIN).exists()
-        if not is_admin:
-            return Response({"error": "Admin rights required"}, status=403)
+        services.delete_invitation(
+            user=request.user,
+            team_id=team_id,
+            invite_id=invite_id,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-        invitation = get_object_or_404(Invitation, id=invite_id, team_id=team_id)
-        invitation.delete()
-        return Response(status=204)
 
 class TeamMemberManagementView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, team_id):
-        team = get_object_or_404(Team, id=team_id)
-
-        if not team.memberships.filter(user=request.user).exists():
-            return Response(status=403)
-        
-        memberships = team.memberships.all().select_related('user')
-        
-        data = [{
-            "id": m.user.id,
-            "email": m.user.email,
-            "role": m.role
-        } for m in memberships]
-        return Response(data)
+        memberships = services.list_members(user=request.user, team_id=team_id)
+        return Response([
+            {
+                "id": membership.user.id,
+                "email": membership.user.email,
+                "role": membership.role,
+            }
+            for membership in memberships
+        ])
 
     def delete(self, request, team_id, user_id):
-        team = get_object_or_404(Team, id=team_id)
-        
-        requester_membership = get_object_or_404(TeamMembership, team=team, user=request.user)
-        if requester_membership.role != TeamMembership.Role.ADMIN:
-            return Response({"error": "Admin rights required"}, status=403)
+        services.remove_member(
+            user=request.user,
+            team_id=team_id,
+            user_id=user_id,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-        target_membership = get_object_or_404(TeamMembership, team=team, user_id=user_id)
 
-        if target_membership.role == TeamMembership.Role.ADMIN:
-            admin_count = team.memberships.filter(role=TeamMembership.Role.ADMIN).count()
-            if admin_count <= 1:
-                return Response({"error": "Cannot remove the last admin."}, status=400)
-
-        Task.objects.filter(project__team=team, assignee_id=user_id).update(assignee=None)
-        
-        target_membership.delete()
-        return Response(status=204)
+def _invitation_payload(invitation):
+    return {
+        "id": str(invitation.id),
+        "email": invitation.email,
+        "token": str(invitation.token),
+        "created_at": invitation.created_at.isoformat(),
+    }

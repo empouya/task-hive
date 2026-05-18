@@ -56,3 +56,6 @@ class LoginSerializer(serializers.Serializer):
                 "email": user.email,
             }
         }]
+
+class SocialLoginSerializer(serializers.Serializer):
+    access_token = serializers.CharField()

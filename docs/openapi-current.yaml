@@ -1,0 +1,531 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: 0.0.0
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: api_v1_auth_login_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: api_v1_auth_me_retrieve
+      tags:
+      - api
+      security:
+      - basicAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/register/:
+    post:
+      operationId: api_v1_auth_register_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/social/{provider}/:
+    post:
+      operationId: api_v1_auth_social_create
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: api_v1_auth_token_refresh_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/v1/comments/{comment_id}/:
+    delete:
+      operationId: api_v1_comments_destroy
+      parameters:
+      - in: path
+        name: comment_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/invites/{token}/accept/:
+    post:
+      operationId: api_v1_invites_accept_create
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_invites_accept_destroy
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notifications/:
+    get:
+      operationId: api_v1_notifications_retrieve
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/notifications/{notification_id}/read/:
+    patch:
+      operationId: api_v1_notifications_read_partial_update
+      parameters:
+      - in: path
+        name: notification_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/projects/{project_id}/:
+    patch:
+      operationId: api_v1_projects_partial_update
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/projects/{project_id}/archive/:
+    post:
+      operationId: api_v1_projects_archive_create
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/projects/{project_id}/restore/:
+    post:
+      operationId: api_v1_projects_restore_create
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/projects/{project_id}/tasks/:
+    get:
+      operationId: api_v1_projects_tasks_retrieve
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_projects_tasks_create
+      parameters:
+      - in: path
+        name: project_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tasks/{task_id}/:
+    patch:
+      operationId: api_v1_tasks_partial_update
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_tasks_destroy
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tasks/{task_id}/assign/:
+    patch:
+      operationId: api_v1_tasks_assign_partial_update
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tasks/{task_id}/comments/:
+    get:
+      operationId: api_v1_tasks_comments_retrieve
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_tasks_comments_create
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/tasks/{task_id}/reorder/:
+    patch:
+      operationId: api_v1_tasks_reorder_partial_update
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/teams/:
+    get:
+      operationId: api_v1_teams_retrieve
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_teams_create
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/teams/{team_id}/:
+    patch:
+      operationId: api_v1_teams_partial_update
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_teams_destroy
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/teams/{team_id}/invites/:
+    get:
+      operationId: api_v1_teams_invites_retrieve
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_teams_invites_create
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /api/v1/teams/{team_id}/invites/{invite_id}/:
+    post:
+      operationId: api_v1_teams_invites_create_2
+      parameters:
+      - in: path
+        name: invite_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_teams_invites_destroy
+      parameters:
+      - in: path
+        name: invite_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/teams/{team_id}/members/:
+    get:
+      operationId: api_v1_teams_members_retrieve
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_teams_members_destroy
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/teams/{team_id}/members/{user_id}/:
+    get:
+      operationId: api_v1_teams_members_retrieve_2
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: api_v1_teams_members_destroy_2
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: user_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '204':
+          description: No response body
+  /api/v1/teams/{team_id}/projects/:
+    get:
+      operationId: api_v1_teams_projects_retrieve
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: api_v1_teams_projects_create
+      parameters:
+      - in: path
+        name: team_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      responses:
+        '200':
+          description: No response body
+  /health/:
+    get:
+      operationId: health_retrieve
+      description: Endpoint to check if the API and Database are functional.
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /test-crash/:
+    get:
+      operationId: test_crash_retrieve
+      tags:
+      - test-crash
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /test-error/:
+    get:
+      operationId: test_error_retrieve
+      tags:
+      - test-error
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /test-protected/:
+    get:
+      operationId: test_protected_retrieve
+      tags:
+      - test-protected
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

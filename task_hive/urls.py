@@ -20,6 +20,7 @@ from common.views import TriggerErrorView, TriggerCrashView, ProtectedTestView, 
 from teams.views import AcceptInvitationView
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     path('admin/', admin.site.urls),
     path('api/v1/', include('task_hive.api.urls')),
     path('api/v1/auth/', include('users.urls')),
