@@ -7,12 +7,25 @@ from users.tokens import revoke_access_token, revoke_refresh_token
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from users.serializers import RegisterSerializer, LoginSerializer
+from users.serializers import RegisterSerializer, LoginSerializer, SocialLoginSerializer
+from users.social_auth import SocialAuthError, authenticate_social_user
 from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
 
+def set_refresh_cookie(response, refresh):
+    cookie_max_age = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
+    response.set_cookie(
+        key="refresh_token",
+        value=str(refresh),
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=cookie_max_age,
+        path="/",
+    )
+    return response
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
@@ -48,23 +61,36 @@ class LoginView(APIView):
             payload = validated[1]
             response = Response(payload, status=status.HTTP_200_OK)
 
-            # Set refresh token in HttpOnly cookie
-            cookie_max_age = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
-            response.set_cookie(
-                key="refresh_token",
-                value=str(refresh),
-                httponly=True,
-                secure=False,            # True in production (HTTPS)
-                samesite="Lax",          # 'Strict' or 'Lax' depending on behavior you want
-                max_age=cookie_max_age,
-                path="/",  # cookie accessible for refresh endpoint
-            )
+            set_refresh_cookie(response, refresh)
 
             return response
         except AuthenticationFailed as e:
             return Response({'error': str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SocialLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, provider):
+        if provider not in {"google", "github"}:
+            return Response({"detail": "Unsupported social provider."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SocialLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user, refresh, payload = authenticate_social_user(
+                provider=provider,
+                access_token=serializer.validated_data["access_token"],
+            )
+        except SocialAuthError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response(payload, status=status.HTTP_200_OK)
+        set_refresh_cookie(response, refresh)
+        return response
 
 
 class RefreshTokenView(APIView):
@@ -97,17 +123,8 @@ class RefreshTokenView(APIView):
                 except Exception:
                     pass
                 
-                cookie_max_age = settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
                 response = Response(payload, status=status.HTTP_200_OK)
-                response.set_cookie(
-                    "refresh_token",
-                    value=str(new_refresh),
-                    httponly=True,
-                    secure=False,  # True in production
-                    samesite="Lax",
-                    max_age=cookie_max_age,
-                    path="/",
-                )
+                set_refresh_cookie(response, new_refresh)
                 return response
 
             return Response(payload, status=status.HTTP_200_OK)
