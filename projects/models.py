@@ -1,4 +1,5 @@
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 from common.models import SoftDeleteModel
 from teams.models import Team
@@ -18,6 +19,7 @@ class Project(SoftDeleteModel):
         default=Status.ACTIVE,
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     class Meta:
         indexes = [

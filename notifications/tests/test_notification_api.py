@@ -7,14 +7,9 @@ from teams.models import TeamMembership, Team
 from projects.models import Project
 from tasks.models import Task
 from comments.models import Comment
-from .models import Notification
+from notifications.models import Notification
 
 User = get_user_model()
-
-@pytest.fixture
-def api_client():
-    return APIClient()
-
 
 @pytest.mark.django_db
 def test_notification_created_on_comment(api_client):

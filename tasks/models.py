@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 from common.models import SoftDeleteModel
 from projects.models import Project
@@ -49,6 +50,7 @@ class Task(SoftDeleteModel):
     position = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["position"]

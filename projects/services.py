@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from projects.tasks import soft_delete_project_tasks
 
 from common.exceptions import BusinessLogicError, PermissionDeniedError
 from common.permissions import can_manage_projects, can_read_team
@@ -75,4 +76,5 @@ def soft_delete_project(*, user, project_id):
         raise PermissionDeniedError("Admin rights required for this team.")
 
     project.soft_delete(deleted_by=user)
+    soft_delete_project_tasks.delay(project.id, user.id)
     return project

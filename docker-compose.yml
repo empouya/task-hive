@@ -25,11 +25,29 @@ services:
       - DJANGO_SETTINGS_MODULE=task_hive.settings.prod
       - DATABASE_URL=postgres://emp:12345@db:5432/taskhive
       - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+      - redis
+  worker:
+    build: .
+    command: celery -A task_hive worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=task_hive.settings.prod
+      - DATABASE_URL=postgres://emp:12345@db:5432/taskhive
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    volumes:
+      - .:/app
     depends_on:
       - db
       - redis
