@@ -17,6 +17,18 @@ services:
     ports:
       - "6379:6379"
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=taskhive
+      - MINIO_ROOT_PASSWORD=taskhive-secret
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
   web:
     build: .
     env_file:
@@ -27,6 +39,12 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - USE_S3_STORAGE=True
+      - AWS_ACCESS_KEY_ID=taskhive
+      - AWS_SECRET_ACCESS_KEY=taskhive-secret
+      - AWS_STORAGE_BUCKET_NAME=taskhive
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_S3_ADDRESSING_STYLE=path
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -35,6 +53,7 @@ services:
     depends_on:
       - db
       - redis
+      - minio
   worker:
     build: .
     command: celery -A task_hive worker --loglevel=info
@@ -46,12 +65,20 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - USE_S3_STORAGE=True
+      - AWS_ACCESS_KEY_ID=taskhive
+      - AWS_SECRET_ACCESS_KEY=taskhive-secret
+      - AWS_STORAGE_BUCKET_NAME=taskhive
+      - AWS_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_S3_ADDRESSING_STYLE=path
     volumes:
       - .:/app
     depends_on:
       - db
       - redis
+      - minio
 
 volumes:
   postgres_data:
   static_volume:
+  minio_data:

@@ -5,6 +5,7 @@ from simple_history.models import HistoricalRecords
 from common.models import SoftDeleteModel
 from projects.models import Project
 from teams.models import Team
+from common.storage import attachment_upload_to
 
 
 class Tag(models.Model):
@@ -63,3 +64,23 @@ class Task(SoftDeleteModel):
 
     def __str__(self):
         return self.title
+
+class TaskAttachment(SoftDeleteModel):
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="task_attachments")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="attachments")
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="task_attachments")
+    file = models.FileField(upload_to=attachment_upload_to)
+    original_filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=255, blank=True)
+    size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["team", "task", "is_deleted"]),
+            models.Index(fields=["uploaded_by", "is_deleted"]),
+        ]
+
+    def __str__(self):
+        return self.original_filename
