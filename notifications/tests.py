@@ -116,4 +116,6 @@ class TestNotificationHarden:
 
         # Assert: Notification should be gone (if using CASCADE) 
         # or target_task should be null (if using SET_NULL)
-        assert Notification.objects.filter(recipient=user_b).count() == 0
+        assert Notification.objects.filter(recipient=user_b).count() == 1
+        assert not Task.objects.filter(id=task.id).exists()
+        assert Task.all_objects.filter(id=task.id, is_deleted=True).exists()
