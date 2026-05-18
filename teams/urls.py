@@ -7,5 +7,5 @@ urlpatterns = [
     path('<int:team_id>/invites/<int:invite_id>/', AcceptInvitationView.as_view(), name="invite-delete"),
     path('<int:team_id>/invites/', InvitationView.as_view(), name='invite-create'),
     path('<int:team_id>/members/', TeamMemberManagementView.as_view(), name='team-member-list'),
-    path('<int:team_id>/members/<int:user_id>', TeamMemberManagementView.as_view(), name='team-member-remove'),
+    path('<int:team_id>/members/<int:user_id>/', TeamMemberManagementView.as_view(), name='team-member-remove'),
 ]
