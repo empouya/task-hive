@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'daphne',
+    'django_prometheus',
     'django.contrib.staticfiles',
     'django.contrib.sites',
     "corsheaders",
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     'realtime',
 ]
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'common.middleware.RequestTraceIdMiddleware',
@@ -72,6 +74,7 @@ MIDDLEWARE = [
     'simple_history.middleware.HistoryRequestMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = 'task_hive.urls'
@@ -288,6 +291,8 @@ SIMPLE_JWT = {
 
 # additional setups
 AUTH_USER_MODEL = 'users.User'
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 SITE_ID = 1
 
