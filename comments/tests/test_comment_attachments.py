@@ -14,8 +14,11 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_member_can_create_comment_attachment(settings):
-    settings.DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
-
+    settings.STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        }
+    }
     user = User.objects.create_user(email="attach-comment@h.com", password="pw")
     team = Team.objects.create(name="Comment Attachment Team")
     TeamMembership.objects.create(user=user, team=team, role=TeamMembership.Role.MEMBER)
@@ -50,7 +53,11 @@ def test_viewer_cannot_create_comment_attachment():
 
 @pytest.mark.django_db
 def test_comment_attachment_soft_delete(settings):
-    settings.DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
+    settings.STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        }
+    }
 
     user = User.objects.create_user(email="delete-comment-attachment@h.com", password="pw")
     team = Team.objects.create(name="Delete Comment Attachment Team")

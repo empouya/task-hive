@@ -13,7 +13,11 @@ User = get_user_model()
 
 @pytest.mark.django_db
 def test_member_can_create_task_attachment(settings):
-    settings.DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
+    settings.STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        }
+    }
 
     user = User.objects.create_user(email="attach-task@h.com", password="pw")
     team = Team.objects.create(name="Attachment Team")
@@ -47,7 +51,11 @@ def test_viewer_cannot_create_task_attachment():
 
 @pytest.mark.django_db
 def test_task_attachment_soft_delete(settings):
-    settings.DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
+    settings.STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        }
+    }
 
     user = User.objects.create_user(email="delete-task-attachment@h.com", password="pw")
     team = Team.objects.create(name="Delete Attachment Team")
@@ -68,7 +76,11 @@ def test_task_attachment_soft_delete(settings):
 
 @pytest.mark.django_db
 def test_task_attachment_list_requires_team_access(settings):
-    settings.DEFAULT_FILE_STORAGE = "django.core.files.storage.InMemoryStorage"
+    settings.STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        }
+    }
 
     owner = User.objects.create_user(email="owner-task-attachment@h.com", password="pw")
     stranger = User.objects.create_user(email="stranger-task-attachment@h.com", password="pw")
