@@ -1,5 +1,6 @@
 from celery import shared_task
 
+from realtime.events import notification_payload, publish_team_event
 from comments.models import Comment
 from notifications.models import Notification
 from tasks.models import Task
@@ -23,6 +24,11 @@ def create_comment_notification(comment_id):
             verb="commented on",
             target_task=task,
         )
+        publish_team_event(
+            team_id=task.project.team_id,
+            event_type="notification.created",
+            payload=notification_payload(notification),
+        )
         return notification.id
 
     return None
@@ -41,6 +47,11 @@ def create_assignment_notification(task_id):
             actor=task.creator,
             verb="assigned you to",
             target_task=task,
+        )
+        publish_team_event(
+            team_id=task.project.team_id,
+            event_type="notification.created",
+            payload=notification_payload(notification),
         )
         return notification.id
 

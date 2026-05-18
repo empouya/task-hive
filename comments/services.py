@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 
 from common.exceptions import PermissionDeniedError
 from common.permissions import can_comment, can_manage_projects, can_read_team
+from realtime.events import comment_payload, publish_team_event
 from comments.models import Comment
 from projects.models import Project
 from tasks.models import Task
@@ -17,11 +18,17 @@ def create_comment(*, user, task_id, data):
     if task.project.status == Project.Status.ARCHIVED:
         raise PermissionDeniedError("Project is archived.")
 
-    return Comment.objects.create(
+    comment = Comment.objects.create(
         task=task,
         author=user,
         content=data["content"],
     )
+    publish_team_event(
+        team_id=team.id,
+        event_type="comment.created",
+        payload=comment_payload(comment),
+    )
+    return comment
 
 
 def list_comments(*, user, task_id):
@@ -47,4 +54,9 @@ def delete_comment(*, user, comment_id):
         raise PermissionDeniedError("Only team managers and admins can moderate comments.")
 
     comment.soft_delete(deleted_by=user)
+    publish_team_event(
+        team_id=comment.task.project.team_id,
+        event_type="comment.deleted",
+        payload={"comment": {"id": comment.id, "task_id": comment.task_id}},
+    )
     return comment

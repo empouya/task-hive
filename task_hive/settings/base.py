@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'daphne',
     'django.contrib.staticfiles',
     'django.contrib.sites',
     "corsheaders",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     'tasks',
     'comments',
     'notifications',
+    'realtime',
 ]
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -101,6 +103,7 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = 'task_hive.wsgi.application'
 
+ASGI_APPLICATION = "task_hive.asgi.application"
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -172,6 +175,14 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer" if REDIS_URL else "channels.layers.InMemoryChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        } if REDIS_URL else {},
+    }
+}
 
 USE_S3_STORAGE = env.bool("USE_S3_STORAGE", default=False)
 

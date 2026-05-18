@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 
 from common.exceptions import BusinessLogicError, PermissionDeniedError
 from common.permissions import can_manage_projects, can_read_team, can_reorder_tasks, can_write_tasks
+from realtime.events import publish_team_event, task_payload
 from projects.models import Project
 from tasks.models import Tag, Task
 from teams.models import TeamMembership
@@ -57,6 +58,11 @@ def create_task(*, user, project_id, data):
         **data,
     )
     task.tags.set(tags)
+    publish_team_event(
+        team_id=team.id,
+        event_type="task.created",
+        payload=task_payload(task),
+    )
     return task
 
 
@@ -77,7 +83,13 @@ def update_task(*, user, task_id, serializer_class, data):
     if parent and parent.project_id != task.project_id:
         raise BusinessLogicError("Parent task must belong to the same project.")
 
-    return serializer.save()
+    task = serializer.save()
+    publish_team_event(
+        team_id=task.project.team_id,
+        event_type="task.updated",
+        payload=task_payload(task),
+    )
+    return task
 
 
 @transaction.atomic
@@ -91,6 +103,11 @@ def delete_task(*, user, task_id):
         raise PermissionDeniedError("Project is archived.")
 
     task.soft_delete(deleted_by=user)
+    publish_team_event(
+        team_id=task.project.team_id,
+        event_type="task.deleted",
+        payload={"task": {"id": task.id, "project_id": task.project_id}},
+    )
     return task
 
 
@@ -109,6 +126,11 @@ def reorder_task(*, user, task_id, target_position):
 
     task.position = Decimal(str(target_position))
     task.save(update_fields=["position", "updated_at"])
+    publish_team_event(
+        team_id=task.project.team_id,
+        event_type="task.reordered",
+        payload=task_payload(task),
+    )
     return task
 
 
@@ -127,6 +149,11 @@ def assign_task(*, user, task_id, assignee_id):
         task.assignee = None
 
     task.save(update_fields=["assignee", "updated_at"])
+    publish_team_event(
+        team_id=task.project.team_id,
+        event_type="task.assigned",
+        payload=task_payload(task),
+    )
     return task
 
 

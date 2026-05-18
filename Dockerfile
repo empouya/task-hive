@@ -21,4 +21,4 @@ RUN sed -i 's/\r$//g' /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["gunicorn", "task_hive.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "task_hive.asgi:application"]
