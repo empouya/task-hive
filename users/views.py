@@ -29,9 +29,6 @@ def set_refresh_cookie(response, refresh):
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
-    # BasicAuthentication ensures a 401 is returned instead of 403 
-    # when no credentials are provided.
-    authentication_classes = [BasicAuthentication, SessionAuthentication]
 
     def get(self, request):
         serializer = RegisterSerializer(request.user)
